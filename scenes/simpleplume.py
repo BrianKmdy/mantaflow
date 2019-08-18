@@ -32,9 +32,9 @@ source = s.create(Cylinder, center=gs*vec3(0.5,0.1,0.5), radius=res*0.14, z=gs*v
 flags.initDomain()
 flags.fillGrid()
 
-if (GUI):
-	gui = Gui()
-	gui.show()
+# if (GUI):
+# 	gui = Gui()
+# 	gui.show()
 	
 #main loop
 for t in range(250):

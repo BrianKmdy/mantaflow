@@ -11,11 +11,14 @@
  *
  ******************************************************************************/
 
+#include "vr.h"
 #include "pythonInclude.h"
 #include <stdio.h>
 #include "manta.h"
 #include "general.h"
 #include "wchar.h"
+
+#include <thread>
 
 namespace Manta {
 	extern void guiMain(int argc, char* argv[]);
@@ -104,10 +107,31 @@ int main(int argc,char* argv[]) {
 		doGui = false;
 	}
 
-	if(doGui) {
-		guiMain(argc, argv);    
-		doScript = false;
+	bool doVr = false;
+	if (doVr) {
+		CMainApplication* pMainApplication = new CMainApplication(argc, argv);
+
+		if (!pMainApplication->BInit())
+		{
+			pMainApplication->Shutdown();
+			return 1;
+		}
+
+		vector<string> args;
+		for (int i = 1; i < argc; i++) args.push_back(argv[i]);
+		std::thread script_thread(runScript, args);
+
+		pMainApplication->RunMainLoop();
+
+		script_thread.join();
 	}
+	else {
+		if (doGui) {
+			guiMain(argc, argv);
+			doScript = false;
+		}
+	}
+	
 #endif        		
 
 	if(doScript) {
@@ -120,6 +144,7 @@ int main(int argc,char* argv[]) {
 		for (int i=1; i<argc; i++) args.push_back(argv[i]);
 		runScript(args);
 	}
+
 
 	return 0;
 }
