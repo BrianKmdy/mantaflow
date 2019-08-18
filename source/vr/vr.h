@@ -37,27 +37,6 @@
 #endif
 
 void ThreadSleep(unsigned long nMilliseconds);
-
-class CGLRenderModel
-{
-public:
-	CGLRenderModel(const std::string& sRenderModelName);
-	~CGLRenderModel();
-
-	bool BInit(const vr::RenderModel_t& vrModel, const vr::RenderModel_TextureMap_t& vrDiffuseTexture);
-	void Cleanup();
-	void Draw();
-	const std::string& GetName() const { return m_sModelName; }
-
-private:
-	GLuint m_glVertBuffer;
-	GLuint m_glIndexBuffer;
-	GLuint m_glVertArray;
-	GLuint m_glTexture;
-	GLsizei m_unVertexCount;
-	std::string m_sModelName;
-};
-
 static bool g_bPrintf = true;
 
 //-----------------------------------------------------------------------------
@@ -83,10 +62,6 @@ public:
 	bool SetupTexturemaps();
 
 	void SetupScene();
-	void AddCubeToScene(Matrix4 mat, std::vector<float>& vertdata);
-	void AddCubeVertex(float fl0, float fl1, float fl2, float fl3, float fl4, std::vector<float>& vertdata);
-
-	void RenderControllerAxes();
 
 	bool SetupStereoRenderTargets();
 	void SetupCompanionWindow();
@@ -103,11 +78,6 @@ public:
 
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t& matPose);
 
-	GLuint CompileGLShader(const char* pchShaderName, const char* pchVertexShader, const char* pchFragmentShader);
-	bool CreateAllShaders();
-
-	CGLRenderModel* FindOrLoadRenderModel(const char* pchRenderModelName);
-
 private:
 	bool m_bDebugOpenGL;
 	bool m_bVerbose;
@@ -121,13 +91,13 @@ private:
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
 
+
 	struct ControllerInfo_t
 	{
 		vr::VRInputValueHandle_t m_source = vr::k_ulInvalidInputValueHandle;
 		vr::VRActionHandle_t m_actionPose = vr::k_ulInvalidActionHandle;
 		vr::VRActionHandle_t m_actionHaptic = vr::k_ulInvalidActionHandle;
 		Matrix4 m_rmat4Pose;
-		CGLRenderModel* m_pRenderModel = nullptr;
 		std::string m_sRenderModelName;
 		bool m_bShowController;
 	};
@@ -229,8 +199,6 @@ private: // OpenGL bookkeeping
 
 	uint32_t m_nRenderWidth;
 	uint32_t m_nRenderHeight;
-
-	std::vector< CGLRenderModel* > m_vecRenderModels;
 
 	vr::VRActionHandle_t m_actionHideCubes = vr::k_ulInvalidActionHandle;
 	vr::VRActionHandle_t m_actionHideThisController = vr::k_ulInvalidActionHandle;

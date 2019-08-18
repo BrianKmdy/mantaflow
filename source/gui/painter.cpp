@@ -504,7 +504,7 @@ template<> void GridPainter<Real>::paint() {
 template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
-	
+
 	const int dm     = getDispMode();
 	const Real scale = getScale();
 	const float dx   = mLocalGrid->getDx();

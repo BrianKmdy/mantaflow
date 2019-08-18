@@ -107,7 +107,7 @@ int main(int argc,char* argv[]) {
 		doGui = false;
 	}
 
-	bool doVr = false;
+	bool doVr = true;
 	if (doVr) {
 		CMainApplication* pMainApplication = new CMainApplication(argc, argv);
 
