@@ -107,7 +107,7 @@ void GridPainter<T>::attachWidget(QLayout* layout) {
 }
 
 template<class T>
-void GridPainter<T>::update() {
+void GridPainter<T>::update() { 
 	Grid<T>* src = (Grid<T>*) mObject;
 	
 	if (!mLocalGrid) {

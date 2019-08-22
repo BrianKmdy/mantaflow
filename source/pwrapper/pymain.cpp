@@ -123,7 +123,8 @@ int main(int argc,char* argv[]) {
 
 		pMainApplication->RunMainLoop();
 
-		script_thread.join();
+		// XXX/bmoody Re-enable this to shutdown properly
+		// script_thread.join();
 	}
 	else {
 		if (doGui) {

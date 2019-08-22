@@ -2,6 +2,7 @@
 
 //========= Copyright Valve Corporation ============//
 
+
 #include <SDL.h>
 #include <GL/glew.h>
 #include <SDL_opengl.h>
@@ -24,6 +25,7 @@
 #include "shared/Matrices.h"
 #include "shared/pathtools.h"
 
+
 #if defined(POSIX)
 #include "unistd.h"
 #endif
@@ -38,6 +40,8 @@
 
 void ThreadSleep(unsigned long nMilliseconds);
 static bool g_bPrintf = true;
+
+namespace Manta {
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -78,6 +82,9 @@ public:
 
 	Matrix4 ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t& matPose);
 
+	GLuint CompileGLShader(const char* pchShaderName, const char* pchVertexShader, const char* pchFragmentShader);
+	bool CreateAllShaders();
+
 private:
 	bool m_bDebugOpenGL;
 	bool m_bVerbose;
@@ -90,7 +97,6 @@ private:
 	std::string m_strDisplay;
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
-
 
 	struct ControllerInfo_t
 	{
@@ -153,6 +159,10 @@ private: // OpenGL bookkeeping
 	GLuint m_unControllerVAO;
 	unsigned int m_uiControllerVertcount;
 
+	GLuint m_glTestBuffer;
+	GLuint m_unTestVAO;
+	unsigned int m_testVertCount;
+
 	Matrix4 m_mat4HMDPose;
 	Matrix4 m_mat4eyePosLeft;
 	Matrix4 m_mat4eyePosRight;
@@ -179,10 +189,12 @@ private: // OpenGL bookkeeping
 	GLuint m_unCompanionWindowProgramID;
 	GLuint m_unControllerTransformProgramID;
 	GLuint m_unRenderModelProgramID;
+	GLuint m_unTestProgramID;
 
 	GLint m_nSceneMatrixLocation;
 	GLint m_nControllerMatrixLocation;
 	GLint m_nRenderModelMatrixLocation;
+	GLint m_nTestMatrixLocation;
 
 	struct FramebufferDesc
 	{
@@ -213,3 +225,5 @@ bool GetDigitalActionFallingEdge(vr::VRActionHandle_t action, vr::VRInputValueHa
 bool GetDigitalActionState(vr::VRActionHandle_t action, vr::VRInputValueHandle_t* pDevicePath = nullptr);
 void dprintf(const char* fmt, ...);
 std::string GetTrackedDeviceString(vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError* peError = NULL);
+
+}
