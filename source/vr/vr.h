@@ -162,6 +162,7 @@ private: // OpenGL bookkeeping
 	GLuint m_glTestBuffer;
 	GLuint m_unTestVAO;
 	unsigned int m_testVertCount;
+	unsigned int m_numLines;
 
 	Matrix4 m_mat4HMDPose;
 	Matrix4 m_mat4eyePosLeft;

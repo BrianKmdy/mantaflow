@@ -107,8 +107,12 @@ int main(int argc,char* argv[]) {
 		doGui = false;
 	}
 
-	bool doVr = true;
+	bool doVr = false;
 	if (doVr) {
+		vector<string> args;
+		for (int i = 1; i < argc; i++) args.push_back(argv[i]);
+		std::thread script_thread(runScript, args);
+
 		CMainApplication* pMainApplication = new CMainApplication(argc, argv);
 
 		if (!pMainApplication->BInit())
@@ -116,10 +120,6 @@ int main(int argc,char* argv[]) {
 			pMainApplication->Shutdown();
 			return 1;
 		}
-
-		vector<string> args;
-		for (int i = 1; i < argc; i++) args.push_back(argv[i]);
-		std::thread script_thread(runScript, args);
 
 		pMainApplication->RunMainLoop();
 

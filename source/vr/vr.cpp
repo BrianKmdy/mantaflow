@@ -1,6 +1,9 @@
 #include "vr.h"
 #include "painter.h"
 
+#include <thread>
+#include <chrono>
+#include <fstream>
 //========= Copyright Valve Corporation ============//
 
 void ThreadSleep(unsigned long nMilliseconds)
@@ -11,6 +14,8 @@ void ThreadSleep(unsigned long nMilliseconds)
 usleep(nMilliseconds * 1000);
 #endif
 }
+
+std::chrono::milliseconds start_time = std::chrono::milliseconds(0);
 
 namespace Manta {
 
@@ -51,14 +56,35 @@ void getCellCoordinatesVR(const Vec3i& pos, Vec3 box[4], int dim, bool offset = 
 	box[1] = p1; box[1][dim2] = p0[dim2];
 	box[2] = p1;
 }
-static inline void glVertexVR(const Vec3& v, const float dx) {
-	glVertex3f(v.x * dx, v.y * dx, v.z * dx);
+
+std::ofstream fout;
+
+static inline void glVertexVR(const Vec3& v, const float dx, std::vector<float>* lines) {
+	float scale = 5.0;
+
+	float x = v.x * dx * scale;
+	x -= 2;
+
+	float y = v.y * dx * scale;
+
+	float z = v.z * dx * scale;
+	z -= 2;
+
+	lines->push_back(z);
+	lines->push_back(y);
+	lines->push_back(x);
+
+	
+	
 }
+
 void glBoxVR(const Vec3& p0, const Vec3& p1, const float dx) {
+	// XXX/bmoody Review this
+	std::vector<float> lines;
 	const int box[24] = { 0,1,0,2,0,4,7,6,7,5,7,3,1,3,1,5,2,3,2,6,4,5,4,6 };
 	for (int i = 0; i < 24; i++) {
 		const int b = box[i];
-		glVertexVR(Vec3((b & 1) ? p1.x : p0.x, (b & 2) ? p1.y : p0.y, (b & 4) ? p1.z : p0.z), dx);
+		glVertexVR(Vec3((b & 1) ? p1.x : p0.x, (b & 2) ? p1.y : p0.y, (b & 4) ? p1.z : p0.z), dx, &lines);
 	}
 }
 template<typename T>
@@ -129,9 +155,11 @@ Real getScale() {
 
 }
 
-void paint() {
+std::vector<float> get_lines() {
+	std::vector<float> lines;
+
 	if (!mObject || mPlane < 0 || mPlane >= mLocalGrid->getSize()[mDim])
-		return;
+		return lines;
 
 	const int dm = getDispMode();
 	const Real scale = getScale();
@@ -139,9 +167,6 @@ void paint() {
 	const bool mac = mLocalGrid->getType() & GridBase::TypeMAC;
 
 	if ((dm == Painter::VecDisplayModes::VecDispCentered) || (dm == Painter::VecDisplayModes::VecDispStaggered)) {
-		// regular velocity drawing mode
-		glBegin(GL_LINES);
-
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) {
 			Vec3 vel = mLocalGrid->get(p) * scale;
 			Vec3 pos(p.x + 0.5, p.y + 0.5, p.z + 0.5);
@@ -154,10 +179,8 @@ void paint() {
 					if (p.z < mLocalGrid->getSizeZ() - 1)
 						vel.z = 0.5 * (vel.z + scale * mLocalGrid->get(p.x, p.y, p.z + 1).z);
 				}
-				glColor3f(0, 1, 0);
-				glVertexVR(pos, dx);
-				glColor3f(1, 1, 0);
-				glVertexVR(pos + vel * 1.2, dx);
+				glVertexVR(pos, dx, &lines);
+				// glVertexVR(pos + vel * 1.2, dx, &lines);
 			}
 			else if (dm == Painter::VecDisplayModes::VecDispStaggered) {
 				for (int d = 0; d < 3; d++) {
@@ -167,22 +190,18 @@ void paint() {
 						p1[d] -= 0.5f;
 					Vec3 color(0.0);
 					color[d] = 1;
-					glColor3f(color.x, color.y, color.z);
-					glVertexVR(p1, dx);
-					glColor3f(1, 1, 0);
+					glVertexVR(p1, dx, &lines);
 					p1[d] += vel[d];
-					glVertexVR(p1, dx);
+					glVertexVR(p1, dx, &lines);
 				}
 			}
 		}
-		glEnd();
-
 	}
 	else if (dm == Painter::VecDisplayModes::VecDispUv) {
 		std::cout << "Painting UV" << std::endl;
 		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!
 		Vec3 box[4];
-		glBegin(GL_QUADS);
+		// XXX/bmoody Don't want lines here, review
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane)
 		{
 			Vec3 v = mLocalGrid->get(p) * scale;
@@ -196,13 +215,13 @@ void paint() {
 				v[c] = fmod((Real)v[c], (Real)1.);
 			}
 			//v *= mLocalGrid->get(0)[0]; // debug, show uv grid weight as brightness of values
-			glColor3f(v[0], v[1], v[2]);
 			getCellCoordinatesVR(p, box, mDim);
 			for (int n = 0; n < 4; n++)
-				glVertexVR(box[n], dx);
+				glVertexVR(box[n], dx, &lines);
 		}
-		glEnd();
 	}
+
+	return lines;
 }
 
 void GLAPIENTRY
@@ -496,6 +515,10 @@ bool CMainApplication::BInit()
 	// 		m_MillisecondsTimer.start(1, this);
 	// 		m_SecondsTimer.start(1000, this);
 
+	printf("Waiting for simulation");
+	std::this_thread::sleep_for(std::chrono::seconds(2));
+	start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+
 	if (!BInitGL())
 	{
 		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
@@ -599,6 +622,9 @@ bool CMainApplication::BInitGL()
 
 	if (!CreateAllShaders())
 		return false;
+
+	if (!mObject)
+		nextObject();
 
 	SetupTexturemaps();
 	SetupScene();
@@ -802,6 +828,31 @@ void CMainApplication::RunMainLoop()
 			nextObject();
 
 		RenderFrame();
+
+//		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) - start_time;
+//
+//		auto lines = std::vector<float>();
+//		lines.push_back(0 - time_elapsed.count() * 0.0005);
+//		lines.push_back(0 + time_elapsed.count() * 0.0005);
+//		lines.push_back(0);
+//		lines.push_back(-0.5 - time_elapsed.count() * 0.0005);
+//		lines.push_back(0.5 + time_elapsed.count() * 0.0005);
+//		lines.push_back(0);
+
+		auto lines = get_lines();
+		m_numLines = lines.size();
+
+		// Add the test buffers
+		glBindVertexArray(m_unTestVAO);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_glTestBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * lines.size(), &lines[0], GL_DYNAMIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const void*)0);
+
+		glBindVertexArray(0);
+		glDisableVertexAttribArray(0);
 	}
 
 	SDL_StopTextInput();
@@ -1239,28 +1290,9 @@ void CMainApplication::SetupScene()
 
 	// Add the test buffers
 	glGenVertexArrays(1, &m_unTestVAO);
-	glBindVertexArray(m_unTestVAO);
-
-	std::vector<float> points;
-	points.push_back(-0.5);
-	points.push_back(0.5);
-	points.push_back(0.0);
-	points.push_back(0.5);
-	points.push_back(0.5);
-	points.push_back(0.0);
-	points.push_back(0.5);
-	points.push_back(-0.5);
-	points.push_back(0.0);
-
 	glGenBuffers(1, &m_glTestBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, m_glTestBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * points.size(), &points[0], GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const void*)offset);
-
 	glBindVertexArray(0);
-	glDisableVertexAttribArray(0);
 }
 
 
@@ -1456,7 +1488,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	glUseProgram(m_unTestProgramID);
 	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
 	glBindVertexArray(m_unTestVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArrays(GL_LINES, 0, m_numLines);
 	glBindVertexArray(0);
 	glUseProgram(0);
 
