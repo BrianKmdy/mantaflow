@@ -57,12 +57,66 @@ void GLWidget::windowSize(int w, int h) {
 
 void GLWidget::initializeGL()
 {
+	std::cout << "Initializing" << std::endl;
+	initializeGLFunctions();
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();     
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glClearDepth(1.0);    
+}
+
+GLuint GLWidget::getBufferId()
+{
+	GLuint buffer;
+	glGenBuffers(1, &buffer);
+	return buffer;
+}
+
+
+#define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
+void GLWidget::drawLines(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+	int vertexbufsize = vertices.size() * sizeof(float);
+	int colorbufsize = colors.size() * sizeof(float);
+	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
+
+	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
+}
+
+void GLWidget::drawTriangles(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+	int vertexbufsize = vertices.size() * sizeof(float);
+	int colorbufsize = colors.size() * sizeof(float);
+	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
+
+	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
 }
 
 void GLWidget::paintGL()

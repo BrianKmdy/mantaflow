@@ -13,7 +13,6 @@
 
 #include "painter.h"
 #include "simpleimage.h"
-#include <QtOpenGL>
 #include <sstream>
 #include <iomanip>
 
@@ -86,13 +85,18 @@ void LockedObjPainter::nextObject() {
 // Grid painter
 
 template<class T>
-GridPainter<T>::GridPainter(FlagGrid** flags, QWidget* par) 
-	: LockedObjPainter(par), mMaxVal(0), mDim(0), mPlane(0), mMax(0), mLocalGrid(NULL), 
+GridPainter<T>::GridPainter(GLuint buffer, FlagGrid** flags, QWidget* par)
+	: LockedObjPainter(buffer, par), mMaxVal(0), mDim(0), mPlane(0), mMax(0), mLocalGrid(NULL), 
 	  mFlags(flags), mInfo(NULL), mHide(false), mHideLocal(false), mDispMode(), mValScale()
 {
 	mDim = 2; // Z plane
 	mPlane = 0;
-	mInfo = new QLabel(); 
+	mInfo = new QLabel();
+
+	// glGenVertexArrays(1, &mVertexArray);
+	// glGenBuffers(1, &mBuffer);
+	// glBindBuffer(GL_ARRAY_BUFFER, mBuffer);
+	// glBindVertexArray(0);
 }
 
 template<class T>
@@ -104,6 +108,11 @@ GridPainter<T>::~GridPainter() {
 template<class T>
 void GridPainter<T>::attachWidget(QLayout* layout) {
 	layout->addWidget(mInfo);
+}
+
+template<class T>
+void attachGLWidget(GLWidget* widget) {
+
 }
 
 template<class T>
@@ -439,12 +448,17 @@ void projectImg( SimpleImage& img, const Grid<Real>& val, int shadeMode=0, Real 
 template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
 		return;
+
+	if (!setupBuffer())
+		return;
 	
 	const int dm     = getDispMode();
 	const Real scale = getScale();
 	const float dx   = mLocalGrid->getDx();
 	Vec3 box[4];
-	glBegin(GL_QUADS);
+
+	std::vector<float> vertices;
+	std::vector<float> colors;
 
 	// "new" drawing style 
 	// ignore flags, its a bit dangerous to skip outside info
@@ -452,25 +466,27 @@ template<> void GridPainter<Real>::paint() {
 
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
 		{ 
+			Vec3 color;
 			Real v = mLocalGrid->get(p) * scale; 
 			if (dm==RealDispLevelset) {
 				v = max(min(v*0.2, 1.0),-1.0);
-				if (v>=0)
-					glColor3f(v,0,0.5);
+				if (v >= 0)
+					color = Vec3(0, 0, 0.5);
 				else
-					glColor3f(0.5, 1.0+v, 0.);
+					color = Vec3(0.5, 1.0 + v, 0);
 			} else { // RealDispStd
 				if (v>0)
-					glColor3f(v,v,v);
+					color = Vec3(v, v, v);
 				else
-					glColor3f(-v,0,0);
+					color = Vec3(-v, 0, 0);
 			}
 
 			getCellCoordinates(p, box, mDim);
-			for (int n=0;n<4;n++) 
-				glVertex(box[n], dx);
+
+			addQuad(vertices, colors, box, color, dx);
 		}
 
+		mGlWidget->drawTriangles(mBuffer, vertices, colors);
 	}
 
 	if( (dm==RealDispShadeVol) || (dm==RealDispShadeSurf) ) {
@@ -490,14 +506,14 @@ template<> void GridPainter<Real>::paint() {
 		   	if(mDim==0) col = img.get( s[0]    + p[2], p[1] );
 		   	if(mDim==1) col = img.get( s[0]+s[2]+p[0], p[2] );
 
-			glColor3f(col.x,col.y,col.z); 
+			//glColor3f(col.x,col.y,col.z); 
 			getCellCoordinates(p, box, mDim);
-			for (int n=0;n<4;n++) 
-				glVertex(box[n], dx);
+			//for (int n=0;n<4;n++) 
+			//	glVertex(box[n], dx);
 		}
 	}
 
-	glEnd();    
+	// glEnd();    
 }
 
 // Paint velocity vectors
@@ -505,16 +521,19 @@ template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
+	if (!setupBuffer())
+		return;
+
 	const int dm     = getDispMode();
 	const Real scale = getScale();
 	const float dx   = mLocalGrid->getDx();
 	const bool mac   = mLocalGrid->getType() & GridBase::TypeMAC;
 
+	std::vector<float> vertices;
+	std::vector<float> colors;
+
 	if( (dm==VecDispCentered) || (dm==VecDispStaggered) ) {
 
-		// regular velocity drawing mode
-		glBegin(GL_LINES);
-			
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) {        
 			Vec3 vel = mLocalGrid->get(p) * scale;
 			Vec3 pos (p.x+0.5, p.y+0.5, p.z+0.5);
@@ -527,10 +546,8 @@ template<> void GridPainter<Vec3>::paint() {
 					if (p.z < mLocalGrid->getSizeZ()-1) 
 						vel.z = 0.5 * (vel.z + scale * mLocalGrid->get(p.x,p.y,p.z+1).z);
 				}
-				glColor3f(0,1,0);
-				glVertex(pos, dx);
-				glColor3f(1,1,0);
-				glVertex(pos+vel*1.2, dx);
+				addVec(vertices, colors, pos, Vec3(0.0, 0.0, 1.0), dx);
+				addVec(vertices, colors, pos + vel * 1.2, Vec3(1.0, 0.0, 1.0), dx);
 			} else if (dm==VecDispStaggered) {
 				for (int d=0; d<3; d++) {
 					if (fabs(vel[d]) < 1e-2) continue;
@@ -539,20 +556,20 @@ template<> void GridPainter<Vec3>::paint() {
 						p1[d] -= 0.5f;
 					Vec3 color(0.0);
 					color[d] = 1;
-					glColor3f(color.x, color.y, color.z);
-					glVertex(p1, dx);
-					glColor3f(1,1,0);
+
+					addVec(vertices, colors, p1, color, dx);
 					p1[d] += vel[d];
-					glVertex(p1, dx);
+					addVec(vertices, colors, p1, Vec3(1.0, 1.0, 0.0), dx);
 				}
 			}
 		}
-		glEnd();    
+
+		mGlWidget->drawLines(mBuffer, vertices, colors);
 	
 	} else if (dm==VecDispUv) {
 		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!
 		Vec3 box[4];
-		glBegin(GL_QUADS); 
+		// glBegin(GL_QUADS); 
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
 		{ 
 			Vec3 v = mLocalGrid->get(p) * scale; 
@@ -566,12 +583,12 @@ template<> void GridPainter<Vec3>::paint() {
 				v[c] = fmod( (Real)v[c], (Real)1.);
 			} 
 			//v *= mLocalGrid->get(0)[0]; // debug, show uv grid weight as brightness of values
-			glColor3f(v[0],v[1],v[2]); 
-			getCellCoordinates(p, box, mDim);
-			for (int n=0;n<4;n++) 
-				glVertex(box[n], dx);
+			// glColor3f(v[0],v[1],v[2]); 
+			// getCellCoordinates(p, box, mDim);
+			// for (int n=0;n<4;n++) 
+			// 	glVertex(box[n], dx);
 		}
-		glEnd();    
+		// glEnd();    
 	}
 }
 

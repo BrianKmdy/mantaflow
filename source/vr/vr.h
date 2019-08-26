@@ -1,7 +1,9 @@
 #pragma once
 
-//========= Copyright Valve Corporation ============//
 
+
+//========= Copyright Valve Corporation ============//
+#ifdef VR
 
 #include <SDL.h>
 #include <GL/glew.h>
@@ -228,3 +230,5 @@ void dprintf(const char* fmt, ...);
 std::string GetTrackedDeviceString(vr::TrackedDeviceIndex_t unDevice, vr::TrackedDeviceProperty prop, vr::TrackedPropertyError* peError = NULL);
 
 }
+
+#endif

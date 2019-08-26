@@ -43,12 +43,12 @@ MainWnd::MainWnd() : QMainWindow(0), mPaused(true), mRequestPause(false), mReque
 	mPainterLayout = new QVBoxLayout;    
 	mPainterLayout->setAlignment(Qt::AlignTop);
 	mPainterLayout->addWidget(mInfo);
-	GridPainter<int>* intPainter = new GridPainter<int>(NULL, this);     
-	mPainter.push_back(new GridPainter<Real>((FlagGrid**)intPainter->getGridPtr(), this));    
-	mPainter.push_back(new GridPainter<Vec3>(NULL, this));    
+	GridPainter<int>* intPainter = new GridPainter<int>(0, NULL, this);
+	mPainter.push_back(new GridPainter<Real>(0, (FlagGrid**)intPainter->getGridPtr(), this));    
+	mPainter.push_back(new GridPainter<Vec3>(0, NULL, this));
 	mPainter.push_back(intPainter);
-	mPainter.push_back(new ParticlePainter(intPainter, this));
-	MeshPainter* ptr = new MeshPainter(this);
+	mPainter.push_back(new ParticlePainter(0, intPainter, this));
+	MeshPainter* ptr = new MeshPainter(0, this);
 	mPainter.push_back(ptr);    
 	connect(this, SIGNAL(setBackgroundMesh(Mesh*)), ptr, SLOT(setBackgroundMesh(Mesh*)));
 
@@ -58,7 +58,9 @@ MainWnd::MainWnd() : QMainWindow(0), mPaused(true), mRequestPause(false), mReque
 		connect(this, SIGNAL(painterEvent(int, int)), mPainter[i], SLOT(doEvent(int, int)));
 		connect(mPainter[i], SIGNAL(setViewport(const Vec3i&)), mGlWidget, SLOT(setViewport(const Vec3i&)));
 		mPainter[i]->attachWidget(mPainterLayout);
+		mPainter[i]->attachGLWidget(mGlWidget);
 	}
+	std::cout << "1" << std::endl;
 	
 	// docking widget for painters
 	QDockWidget* painterDock = new QDockWidget("Info", this);
@@ -87,6 +89,8 @@ MainWnd::MainWnd() : QMainWindow(0), mPaused(true), mRequestPause(false), mReque
 	mMenuBar = menuBar()->addMenu( "File" );
 	mMenuBar->addAction( a ); */
 
+	std::cout << "2" << std::endl;
+
 	// keyboard info window, show on demand
     mKbwScene = new QGraphicsScene(); 
     mKbwView = new QGraphicsView(mKbwScene);
@@ -103,6 +107,8 @@ MainWnd::MainWnd() : QMainWindow(0), mPaused(true), mRequestPause(false), mReque
 	this->raise();
 	this->activateWindow();
 
+	std::cout << "3" << std::endl;
+
 	// move gui window to upper left corner and resize window to screen size, enable on demand...
 	if(false) {
 		QRect rc = frameGeometry();
@@ -114,6 +120,8 @@ MainWnd::MainWnd() : QMainWindow(0), mPaused(true), mRequestPause(false), mReque
 		move(rc.topLeft());
 		resize(rc.size());
 	}
+
+	std::cout << "4" << std::endl;
 
 	// uncomment to start  paused
 	//emit pause();

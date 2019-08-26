@@ -28,7 +28,7 @@ public:
 	enum BackgroundMode { BModeNormal=0, BModeTrans, BModeInvisible, Num_BackgroundModes };
 	enum VorticityMode { VModeFull=0, VModeSmoothed, VModeDiff, VModeSmoke, VModeTex, VModeNone, Num_VorticityModes };
 	
-	MeshPainter(QWidget* par = 0);
+	MeshPainter(GLuint buffer, QWidget* par = 0);
 	~MeshPainter();
 	
 	void paint();

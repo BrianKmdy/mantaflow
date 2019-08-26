@@ -1,5 +1,9 @@
+
+
 #include "vr.h"
 #include "painter.h"
+
+#ifdef VR
 
 #include <thread>
 #include <chrono>
@@ -1661,3 +1665,5 @@ Matrix4 CMainApplication::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t&
 }
 
 }
+
+#endif

@@ -20,8 +20,8 @@ using namespace std;
 
 namespace Manta {
 
-MeshPainter::MeshPainter(QWidget* par) 
-	: LockedObjPainter(par), mColorScale(1.0), mMode(ModeFlatShade), mVorticityMode(VModeNone), 
+MeshPainter::MeshPainter(GLuint buffer, QWidget* par)
+	: LockedObjPainter(buffer, par), mColorScale(1.0), mMode(ModeFlatShade), mVorticityMode(VModeNone), 
 	mBackgroundMode(BModeNormal), mLocalMesh(0) , mBackground(0), mHide(false)
 {    
 	mInfo = new QLabel();

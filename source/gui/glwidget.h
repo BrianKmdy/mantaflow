@@ -16,11 +16,12 @@
 
 #include <QGLWidget>
 #include <QtOpenGL>
+#include <QGLFunctions>
 #include "vectorbase.h"
 
 namespace Manta {
 	
-class GLWidget : public QGLWidget {
+class GLWidget : public QGLWidget, protected QGLFunctions {
 Q_OBJECT
 
 public:
@@ -29,7 +30,11 @@ public:
 	
 	QSize minimumSizeHint() const;
 	QSize sizeHint() const;
-	 
+
+	GLuint getBufferId();
+	void drawLines(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors);
+	void drawTriangles(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors);
+
 	void mousePressEvent(QMouseEvent *e);
 	void mouseMoveEvent(QMouseEvent *e);
 	void mouseReleaseEvent(QMouseEvent *e);

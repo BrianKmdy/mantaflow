@@ -14,10 +14,15 @@
 #ifndef _PAINTER_H_
 #define _PAINTER_H_
 
+// #define VR
+
 #include <QWidget>
 #include <QLabel>
+#include <QtOpenGL>
+#include <QGLFunctions>
 #include <map>
 #include "grid.h"
+#include "glwidget.h"
 
 namespace Manta {
 	
@@ -42,17 +47,22 @@ public:
 	enum RealDisplayModes { RealDispOff=0, RealDispStd, RealDispLevelset, RealDispShadeVol, RealDispShadeSurf, NumRealDispModes }; 
 	enum VecDisplayModes  { VecDispOff=0, VecDispCentered, VecDispStaggered, VecDispUv, NumVecDispModes };
 	
-	Painter(QWidget* par = 0) : QObject(par) {}
+	Painter(QWidget* par = 0) : QObject(par), mGlWidget(nullptr) {}
 	virtual ~Painter() {}
 	
 	virtual std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
 	virtual void attachWidget(QLayout* layout) {}
+	void attachGLWidget(GLWidget* widget) { mGlWidget = widget;  }
+
 signals:
 	void setViewport(const Vec3i& gridsize);
 	
 public slots:
 	virtual void paint() = 0;
 	virtual void doEvent(int e, int param=0) = 0;
+
+protected:
+	GLWidget* mGlWidget;
 };
 
 //! Base clas for all painters that require access to a locked PbClass
@@ -60,7 +70,8 @@ public slots:
 class LockedObjPainter : public Painter {
 	Q_OBJECT
 public:
-	LockedObjPainter(QWidget* par = 0) : Painter(par), mRequestUpdate(false), mObject(NULL), mObjIndex(-1) {}
+	LockedObjPainter(GLuint buffer, QWidget* par = 0) :
+		Painter(par), mRequestUpdate(false), mObject(NULL), mObjIndex(-1), mBuffer(buffer) {}
 
 	void doEvent(int e, int param=0); // don't overload, use processKeyEvent and update instead
 	
@@ -69,17 +80,53 @@ protected:
 	virtual std::string getID() = 0;
 	virtual void update() = 0;
 	virtual void processKeyEvent(PainterEvent e, int param) = 0;
+
+	GLuint setupBuffer() {
+		if (!mBuffer)
+		{
+			if (mGlWidget)
+				mBuffer = mGlWidget->getBufferId();
+		}
+
+		return mBuffer;
+	}
+
+	void addVec(std::vector<float>& vertices, std::vector<float>& colors, Vec3 vertex, Vec3 color, float mod = 1.0) {
+		vertices.push_back(vertex.x * mod);
+		vertices.push_back(vertex.y * mod);
+		vertices.push_back(vertex.z * mod);
+		colors.push_back(color.x);
+		colors.push_back(color.y);
+		colors.push_back(color.z);
+	}
+
+	void addQuad(std::vector<float>& vertices, std::vector<float>& colors, Vec3 boxVertices[4], Vec3 color, float mod = 1.0)
+	{
+		// Iterate over the index values needed to make this quad
+		// Triangle 1: 0, 1, 2
+		// Triangle 2: 0, 2, 3
+		for (int i : {0, 1, 2, 0, 2, 3})
+		{
+			vertices.push_back(boxVertices[i].x * mod);
+			vertices.push_back(boxVertices[i].y * mod);
+			vertices.push_back(boxVertices[i].z * mod);
+			colors.push_back(color.x);
+			colors.push_back(color.y);
+			colors.push_back(color.z);
+		}
+	}
 	
 	bool     mRequestUpdate;
 	PbClass* mObject;
 	int      mObjIndex;
+	GLuint mBuffer; //! openGL handle for vertex buffer
 };
 
 //! Painter object for int,Real,Vec3 grids
 template<class T>
 class GridPainter : public LockedObjPainter {
 public:
-	GridPainter(FlagGrid** flags = NULL, QWidget* par = 0);
+	GridPainter(GLuint buffer, FlagGrid** flags = NULL, QWidget* par = 0);
 	~GridPainter();
 	
 	void paint();

@@ -23,8 +23,8 @@ using namespace std;
 
 namespace Manta {
 
-ParticlePainter::ParticlePainter(GridPainter<int>* gridRef, QWidget* par) 
-	: LockedObjPainter(par), mGridRef(gridRef), mLocal(0), mMode(PaintVel), mDisplayMode(0),
+ParticlePainter::ParticlePainter(GLuint buffer, GridPainter<int>* gridRef, QWidget* par) 
+	: LockedObjPainter(buffer, par), mGridRef(gridRef), mLocal(0), mMode(PaintVel), mDisplayMode(0),
 	mLastPdata(-1), mHavePdata(false), mMaxVal(0.)
 {    
 	mInfo = new QLabel();

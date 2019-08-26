@@ -108,7 +108,11 @@ int main(int argc,char* argv[]) {
 	}
 
 	bool doVr = false;
+#ifdef VR
+	doVr = true;
+#endif
 	if (doVr) {
+#ifdef VR
 		vector<string> args;
 		for (int i = 1; i < argc; i++) args.push_back(argv[i]);
 		std::thread script_thread(runScript, args);
@@ -125,6 +129,7 @@ int main(int argc,char* argv[]) {
 
 		// XXX/bmoody Re-enable this to shutdown properly
 		// script_thread.join();
+#endif
 	}
 	else {
 		if (doGui) {
