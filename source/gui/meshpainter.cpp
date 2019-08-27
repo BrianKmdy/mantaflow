@@ -20,8 +20,8 @@ using namespace std;
 
 namespace Manta {
 
-MeshPainter::MeshPainter(GLuint buffer, QWidget* par)
-	: LockedObjPainter(buffer, par), mColorScale(1.0), mMode(ModeFlatShade), mVorticityMode(VModeNone), 
+MeshPainter::MeshPainter()
+	: LockedObjPainter(), mColorScale(1.0), mMode(ModeFlatShade), mVorticityMode(VModeNone), 
 	mBackgroundMode(BModeNormal), mLocalMesh(0) , mBackground(0), mHide(false)
 {    
 	mInfo = new QLabel();
@@ -32,7 +32,16 @@ MeshPainter::~MeshPainter() {
 		delete mLocalMesh;
 }
 
-void MeshPainter::attachWidget(QLayout* layout) {
+QMeshPainter::QMeshPainter(QWidget* par)
+	: MeshPainter(), QPainter(par)
+{
+}
+
+QMeshPainter::~QMeshPainter() {
+
+}
+
+void QMeshPainter::attachWidget(QLayout* layout) {
 	layout->addWidget(mInfo);
 }
 
@@ -92,7 +101,7 @@ void MeshPainter::updateText() {
 	mInfo->setText(s.str().c_str());    
 }
 
-void MeshPainter::setBackgroundMesh(Mesh* bgr) {
+void QMeshPainter::setBackgroundMesh(Mesh* bgr) {
 	mBackground = bgr;
 }
 

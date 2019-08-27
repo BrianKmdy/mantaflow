@@ -18,21 +18,18 @@
 
 #include <QWidget>
 #include <QLabel>
-#include <QtOpenGL>
-#include <QGLFunctions>
 #include <map>
 #include "grid.h"
-#include "glwidget.h"
+#include "glrenderer.h"
 
 namespace Manta {
 	
 // forward decl.
 class PbClass;
-	
+
 //! Base class for all painter
 /*! Derived classes have to implement paint, doEvent */
-class Painter : public QObject {
-	Q_OBJECT
+class Painter {
 public:
 	enum PainterEvent { 
 		EventNone = 0, UpdateRequest, UpdateFull, UpdateStep,
@@ -47,31 +44,26 @@ public:
 	enum RealDisplayModes { RealDispOff=0, RealDispStd, RealDispLevelset, RealDispShadeVol, RealDispShadeSurf, NumRealDispModes }; 
 	enum VecDisplayModes  { VecDispOff=0, VecDispCentered, VecDispStaggered, VecDispUv, NumVecDispModes };
 	
-	Painter(QWidget* par = 0) : QObject(par), mGlWidget(nullptr) {}
+	Painter() : mGLRenderer(nullptr) {}
 	virtual ~Painter() {}
 	
 	virtual std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
-	virtual void attachWidget(QLayout* layout) {}
-	void attachGLWidget(GLWidget* widget) { mGlWidget = widget;  }
-
-signals:
-	void setViewport(const Vec3i& gridsize);
+	void attachGLRenderer(glRenderer* renderer) { mGLRenderer = renderer; std::cout << "Attached rednerer " << mGLRenderer << std::endl; }
 	
-public slots:
+public:
 	virtual void paint() = 0;
 	virtual void doEvent(int e, int param=0) = 0;
 
 protected:
-	GLWidget* mGlWidget;
+	glRenderer* mGLRenderer;
 };
 
 //! Base clas for all painters that require access to a locked PbClass
 /*! Derived classes have to implement paint, update, getID, processKeyEvent. doEvent is handled in this class */
 class LockedObjPainter : public Painter {
-	Q_OBJECT
 public:
-	LockedObjPainter(GLuint buffer, QWidget* par = 0) :
-		Painter(par), mRequestUpdate(false), mObject(NULL), mObjIndex(-1), mBuffer(buffer) {}
+	LockedObjPainter() :
+		Painter(), mRequestUpdate(false), mObject(NULL), mObjIndex(-1), mBuffer(0) {}
 
 	void doEvent(int e, int param=0); // don't overload, use processKeyEvent and update instead
 	
@@ -81,11 +73,14 @@ protected:
 	virtual void update() = 0;
 	virtual void processKeyEvent(PainterEvent e, int param) = 0;
 
-	GLuint setupBuffer() {
+	unsigned int setupBuffer() {
 		if (!mBuffer)
 		{
-			if (mGlWidget)
-				mBuffer = mGlWidget->getBufferId();
+			std::cout << "Don't have buffer" << std::endl;
+			std::cout << mGLRenderer << std::endl;
+			if (mGLRenderer)
+				mBuffer = mGLRenderer->getBufferId();
+			std::cout << mBuffer << std::endl;
 		}
 
 		return mBuffer;
@@ -119,14 +114,14 @@ protected:
 	bool     mRequestUpdate;
 	PbClass* mObject;
 	int      mObjIndex;
-	GLuint mBuffer; //! openGL handle for vertex buffer
+	unsigned int mBuffer; //! openGL handle for vertex buffer
 };
 
 //! Painter object for int,Real,Vec3 grids
 template<class T>
 class GridPainter : public LockedObjPainter {
 public:
-	GridPainter(GLuint buffer, FlagGrid** flags = NULL, QWidget* par = 0);
+	GridPainter(FlagGrid** flags = NULL);
 	~GridPainter();
 	
 	void paint();
@@ -158,6 +153,43 @@ protected:
 	bool        mHideLocal;    //! hide only this type?
 	std::map< void*, int > mDispMode; //! display modes , for each object
 	std::map< std::pair<void*, int>, Real> mValScale; //! scaling of values , per object and display mode
+};
+
+//! Base class for all painter
+/*! Derived classes have to implement paint, doEvent */
+class QPainter : public QObject, public Painter {
+	Q_OBJECT
+public:
+	QPainter(QWidget* par = 0) : QObject(par), Painter() {}
+	virtual ~QPainter() {}
+
+	virtual std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
+
+signals:
+	void setViewport(const Vec3i& gridsize);
+
+public slots:
+	virtual void paint() = 0;
+	virtual void doEvent(int e, int param = 0) = 0;
+	virtual void attachWidget(QLayout* layout) {}
+};
+
+//! Painter object for int,Real,Vec3 grids
+template<class T>
+class QGridPainter : public QPainter, public GridPainter<T> {
+public:
+	QGridPainter(FlagGrid** flags = NULL, QWidget* par = 0);
+	~QGridPainter();
+
+	void doEvent(int e, int param = 0) {
+		GridPainter::doEvent(e, param);
+	}
+
+	void paint() {
+		GridPainter::paint();
+	}
+
+	void update();
 };
 
 }

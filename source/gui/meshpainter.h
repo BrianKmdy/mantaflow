@@ -22,20 +22,15 @@ class Mesh;
 	
 //! Painter object for Meshes
 class MeshPainter : public LockedObjPainter {
-	Q_OBJECT
 public:
 	enum DisplayMode { ModeTrans=0, ModeLines, ModePoints, ModeFlatShade, ModeInvisible, Num_DisplayModes };
 	enum BackgroundMode { BModeNormal=0, BModeTrans, BModeInvisible, Num_BackgroundModes };
 	enum VorticityMode { VModeFull=0, VModeSmoothed, VModeDiff, VModeSmoke, VModeTex, VModeNone, Num_VorticityModes };
 	
-	MeshPainter(GLuint buffer, QWidget* par = 0);
+	MeshPainter();
 	~MeshPainter();
 	
 	void paint();
-	void attachWidget(QLayout* layout);
-	
-public slots:
-	void setBackgroundMesh(Mesh* bgr);
 	
 protected:
 	std::string getID();    
@@ -52,6 +47,26 @@ protected:
 	Mesh* mLocalMesh, *mBackground;
 	QLabel* mInfo;
 	bool mHide;    
+};
+
+class QMeshPainter : public QPainter, public MeshPainter {
+	Q_OBJECT
+public:
+	QMeshPainter(QWidget* par = 0);
+	~QMeshPainter();
+
+	void attachWidget(QLayout* layout);
+
+	void paint() {
+		MeshPainter::paint();
+	}
+
+	void doEvent(int e, int param = 0) {
+		MeshPainter::doEvent(e, param);
+	}
+
+public slots:
+	void setBackgroundMesh(Mesh* bgr);
 };
 	
 } // namespace

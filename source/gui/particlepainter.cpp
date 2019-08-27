@@ -23,8 +23,8 @@ using namespace std;
 
 namespace Manta {
 
-ParticlePainter::ParticlePainter(GLuint buffer, GridPainter<int>* gridRef, QWidget* par) 
-	: LockedObjPainter(buffer, par), mGridRef(gridRef), mLocal(0), mMode(PaintVel), mDisplayMode(0),
+ParticlePainter::ParticlePainter(GridPainter<int>* gridRef) 
+	: LockedObjPainter(), mGridRef(gridRef), mLocal(0), mMode(PaintVel), mDisplayMode(0),
 	mLastPdata(-1), mHavePdata(false), mMaxVal(0.)
 {    
 	mInfo = new QLabel();
@@ -35,7 +35,15 @@ ParticlePainter::~ParticlePainter() {
 		delete mLocal;
 }
 
-void ParticlePainter::attachWidget(QLayout* layout) {
+QParticlePainter::QParticlePainter(GridPainter<int>* gridRef, QWidget* par)
+	: ParticlePainter(gridRef), QPainter(par)
+{
+}
+
+QParticlePainter::~QParticlePainter() {
+}
+
+void QParticlePainter::attachWidget(QLayout* layout) {
 	layout->addWidget(mInfo);
 }
 

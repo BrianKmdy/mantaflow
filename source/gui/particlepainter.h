@@ -21,13 +21,11 @@ namespace Manta {
 
 //! Painter object for Particle Systems
 class ParticlePainter : public LockedObjPainter {
-	Q_OBJECT
 public:
-	ParticlePainter(GLuint buffer, GridPainter<int>* gridRef, QWidget* par = 0);
+	ParticlePainter(GridPainter<int>* gridRef);
 	~ParticlePainter();
 	
 	void paint();
-	void attachWidget(QLayout* layout);
 
 	enum PaintModes { PaintOff=0, PaintVel=1, PaintPos=2 };
 	
@@ -55,6 +53,25 @@ protected:
 
 	void paintBasicSys();
 };    
+
+//! Painter object for Particle Systems
+class QParticlePainter : public QPainter, public ParticlePainter {
+	Q_OBJECT
+public:
+	QParticlePainter(GridPainter<int>* gridRef, QWidget* par = 0);
+	~QParticlePainter();
+
+	void attachWidget(QLayout* layout);
+
+	void doEvent(int e, int param = 0) {
+		ParticlePainter::doEvent(e, param);
+	}
+
+	void paint() {
+		ParticlePainter::paint();
+	}
+};
+
 	
 } // namespace
 

@@ -80,7 +80,7 @@ protected:
 	int mStep;
 	GLWidget *mGlWidget;
 	QAction *mAcPlay, *mAcPause;
-	std::vector<Painter*> mPainter;
+	std::vector<QPainter*> mPainter;
 	std::vector<CustomControl*> mCtrls;
 	QLabel* mInfo;
 	QVBoxLayout* mPainterLayout;

@@ -1,13 +1,14 @@
-
-
 #include "vr.h"
-#include "painter.h"
 
 #ifdef VR
 
 #include <thread>
 #include <chrono>
 #include <fstream>
+
+#include "painter.h"
+#include "particlepainter.h"
+#include "meshpainter.h"
 //========= Copyright Valve Corporation ============//
 
 void ThreadSleep(unsigned long nMilliseconds)
@@ -22,6 +23,8 @@ usleep(nMilliseconds * 1000);
 std::chrono::milliseconds start_time = std::chrono::milliseconds(0);
 
 namespace Manta {
+
+std::vector<Painter*> mPainter;
 
 	// Macro to iterate through one plane
 #define FOR_P_SLICE(__g,__dim,__plane) \
@@ -406,6 +409,58 @@ CMainApplication::~CMainApplication()
 	dprintf("Shutdown");
 }
 
+GLuint CMainApplication::getBufferId()
+{
+	GLuint buffer;
+	glGenBuffers(1, &buffer);
+	return buffer;
+}
+
+
+#define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
+void CMainApplication::drawLines(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+	int vertexbufsize = vertices.size() * sizeof(float);
+	int colorbufsize = colors.size() * sizeof(float);
+	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
+
+	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
+}
+
+void CMainApplication::drawTriangles(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+	int vertexbufsize = vertices.size() * sizeof(float);
+	int colorbufsize = colors.size() * sizeof(float);
+	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
+
+	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
+}
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: Helper to get a string from a tracked device property and turn it
@@ -554,6 +609,14 @@ bool CMainApplication::BInit()
 
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(ErrorCallback, 0);
+
+//	GridPainter<int>* intPainter = new GridPainter<int>(NULL);
+//	mPainter.push_back(new GridPainter<Real>((FlagGrid**)intPainter->getGridPtr()));
+	mPainter.push_back(new GridPainter<Vec3>(NULL));
+//	mPainter.push_back(intPainter);
+//	mPainter.push_back(new ParticlePainter(intPainter));
+//	MeshPainter* ptr = new MeshPainter();
+//	mPainter.push_back(ptr);
 
 	return true;
 }
@@ -842,21 +905,6 @@ void CMainApplication::RunMainLoop()
 //		lines.push_back(-0.5 - time_elapsed.count() * 0.0005);
 //		lines.push_back(0.5 + time_elapsed.count() * 0.0005);
 //		lines.push_back(0);
-
-		auto lines = get_lines();
-		m_numLines = lines.size();
-
-		// Add the test buffers
-		glBindVertexArray(m_unTestVAO);
-
-		glBindBuffer(GL_ARRAY_BUFFER, m_glTestBuffer);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * lines.size(), &lines[0], GL_DYNAMIC_DRAW);
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const void*)0);
-
-		glBindVertexArray(0);
-		glDisableVertexAttribArray(0);
 	}
 
 	SDL_StopTextInput();
@@ -1491,10 +1539,27 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	glUseProgram(m_unTestProgramID);
 	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
-	glBindVertexArray(m_unTestVAO);
-	glDrawArrays(GL_LINES, 0, m_numLines);
-	glBindVertexArray(0);
+
+	for (auto& p : mPainter)
+	{
+		p->paint();
+	}
+
 	glUseProgram(0);
+
+
+//	auto lines = get_lines();
+//	m_numLines = lines.size();
+//
+//	std::vector<float> colors;
+//	for (int i = 0; i < m_numLines; i++)
+//	{
+//		colors.push_back(0.0);
+//		colors.push_back(0.0);
+//		colors.push_back(1.0);
+//	}
+//	drawLines(lines, colors);
+	
 
 	// std::vector<float> points;
 	// points.push_back(-0.5);

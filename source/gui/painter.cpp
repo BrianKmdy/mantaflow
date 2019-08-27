@@ -13,6 +13,7 @@
 
 #include "painter.h"
 #include "simpleimage.h"
+#include "glwidget.h"
 #include <sstream>
 #include <iomanip>
 
@@ -85,24 +86,30 @@ void LockedObjPainter::nextObject() {
 // Grid painter
 
 template<class T>
-GridPainter<T>::GridPainter(GLuint buffer, FlagGrid** flags, QWidget* par)
-	: LockedObjPainter(buffer, par), mMaxVal(0), mDim(0), mPlane(0), mMax(0), mLocalGrid(NULL), 
+GridPainter<T>::GridPainter(FlagGrid** flags)
+	: LockedObjPainter(), mMaxVal(0), mDim(0), mPlane(0), mMax(0), mLocalGrid(NULL), 
 	  mFlags(flags), mInfo(NULL), mHide(false), mHideLocal(false), mDispMode(), mValScale()
 {
 	mDim = 2; // Z plane
 	mPlane = 0;
 	mInfo = new QLabel();
-
-	// glGenVertexArrays(1, &mVertexArray);
-	// glGenBuffers(1, &mBuffer);
-	// glBindBuffer(GL_ARRAY_BUFFER, mBuffer);
-	// glBindVertexArray(0);
 }
 
 template<class T>
 GridPainter<T>::~GridPainter() {
 	if (mLocalGrid)
 		delete mLocalGrid;
+}
+
+template<class T>
+QGridPainter<T>::QGridPainter(FlagGrid** flags, QWidget* par)
+	: QPainter(par), GridPainter<T>(flags)
+{
+}
+
+template<class T>
+QGridPainter<T>::~QGridPainter()
+{
 }
 
 template<class T>
@@ -117,31 +124,36 @@ void attachGLWidget(GLWidget* widget) {
 
 template<class T>
 void GridPainter<T>::update() { 
+	// XXX/bmoody Implement this
+}
+
+template<class T>
+void QGridPainter<T>::update() {
 	Grid<T>* src = (Grid<T>*) mObject;
-	
+
 	if (!mLocalGrid) {
-		mLocalGrid   = new Grid<T>(src->getParent());
+		mLocalGrid = new Grid<T>(src->getParent());
 		// int grid is base for resolution
 		if (src->getType() & GridBase::TypeInt)
 			emit setViewport(src->getSize());
 	}
 	// reallocate if dimensions changed (or solver)
-	if ( (mLocalGrid->getSize() != src->getSize()) || (mLocalGrid->getParent() != src->getParent()) ) { 
+	if ((mLocalGrid->getSize() != src->getSize()) || (mLocalGrid->getParent() != src->getParent())) {
 		delete mLocalGrid;
 		mLocalGrid = new Grid<T>(src->getParent());
 		// int grid is base for resolution
 		if (src->getType() & GridBase::TypeInt)
 			emit setViewport(src->getSize());
 	}
-	
-	mLocalGrid->copyFrom( *src , true ); // copy grid data and type marker
+
+	mLocalGrid->copyFrom(*src, true); // copy grid data and type marker
 	mLocalGrid->setName(src->getName());
-	mLocalGrid->setParent(src->getParent());    
+	mLocalGrid->setParent(src->getParent());
 	mMaxVal = mLocalGrid->getMaxAbs();
-	
-	mPlane = clamp(mPlane, 0, mLocalGrid->getSize()[mDim]-1);
-	
-	updateText();    
+
+	mPlane = clamp(mPlane, 0, mLocalGrid->getSize()[mDim] - 1);
+
+	updateText();
 }
 
 template<> string GridPainter<int>::getID()  { return "Grid<int>";  }
@@ -486,7 +498,7 @@ template<> void GridPainter<Real>::paint() {
 			addQuad(vertices, colors, box, color, dx);
 		}
 
-		mGlWidget->drawTriangles(mBuffer, vertices, colors);
+		mGLRenderer->drawTriangles(mBuffer, vertices, colors);
 	}
 
 	if( (dm==RealDispShadeVol) || (dm==RealDispShadeSurf) ) {
@@ -521,8 +533,12 @@ template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
+	std::cout << "Setting up buffer" << std::endl;
+
 	if (!setupBuffer())
 		return;
+
+	std::cout << "Painting" << std::endl;
 
 	const int dm     = getDispMode();
 	const Real scale = getScale();
@@ -546,8 +562,8 @@ template<> void GridPainter<Vec3>::paint() {
 					if (p.z < mLocalGrid->getSizeZ()-1) 
 						vel.z = 0.5 * (vel.z + scale * mLocalGrid->get(p.x,p.y,p.z+1).z);
 				}
-				addVec(vertices, colors, pos, Vec3(0.0, 0.0, 1.0), dx);
-				addVec(vertices, colors, pos + vel * 1.2, Vec3(1.0, 0.0, 1.0), dx);
+				addVec(vertices, colors, pos, Vec3(0.2, 0.45, 0.8), dx);
+				addVec(vertices, colors, pos + vel * 1.2, Vec3(0.0, 1.0, 0.0), dx);
 			} else if (dm==VecDispStaggered) {
 				for (int d=0; d<3; d++) {
 					if (fabs(vel[d]) < 1e-2) continue;
@@ -564,7 +580,7 @@ template<> void GridPainter<Vec3>::paint() {
 			}
 		}
 
-		mGlWidget->drawLines(mBuffer, vertices, colors);
+		mGLRenderer->drawLines(mBuffer, vertices, colors);
 	
 	} else if (dm==VecDispUv) {
 		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!
@@ -592,10 +608,13 @@ template<> void GridPainter<Vec3>::paint() {
 	}
 }
 
-
 // explicit instantiation
 template class GridPainter<int>;
 template class GridPainter<Real>;
 template class GridPainter<Vec3>;
+
+template class QGridPainter<int>;
+template class QGridPainter<Real>;
+template class QGridPainter<Vec3>;
 	
 } // namespace

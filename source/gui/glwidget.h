@@ -18,10 +18,11 @@
 #include <QtOpenGL>
 #include <QGLFunctions>
 #include "vectorbase.h"
+#include "glrenderer.h"
 
 namespace Manta {
 	
-class GLWidget : public QGLWidget, protected QGLFunctions {
+class GLWidget : public QGLWidget, protected QGLFunctions, public glRenderer {
 Q_OBJECT
 
 public:

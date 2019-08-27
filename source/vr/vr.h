@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 //========= Copyright Valve Corporation ============//
 #ifdef VR
 
@@ -27,6 +25,8 @@
 #include "shared/Matrices.h"
 #include "shared/pathtools.h"
 
+#include "glrenderer.h"
+
 
 #if defined(POSIX)
 #include "unistd.h"
@@ -48,11 +48,15 @@ namespace Manta {
 //-----------------------------------------------------------------------------
 // Purpose:
 //------------------------------------------------------------------------------
-class CMainApplication
+class CMainApplication : public glRenderer
 {
 public:
 	CMainApplication(int argc, char* argv[]);
 	virtual ~CMainApplication();
+
+	unsigned int getBufferId();
+	void drawLines(unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
+	void drawTriangles(unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colrs);
 
 	bool BInit();
 	bool BInitGL();
