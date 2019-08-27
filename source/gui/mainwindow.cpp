@@ -43,14 +43,14 @@ MainWnd::MainWnd() : QMainWindow(0), mPaused(true), mRequestPause(false), mReque
 	mPainterLayout = new QVBoxLayout;    
 	mPainterLayout->setAlignment(Qt::AlignTop);
 	mPainterLayout->addWidget(mInfo);
-	QGridPainter<int>* intPainter = new QGridPainter<int>(NULL, this);
-	mPainter.push_back(new QGridPainter<Real>((FlagGrid**)intPainter->getGridPtr(), this));    
-	mPainter.push_back(new QGridPainter<Vec3>(NULL, this));
-	mPainter.push_back(intPainter);
-	mPainter.push_back(new QParticlePainter(intPainter, this));
-	QMeshPainter* ptr = new QMeshPainter(this);
-	mPainter.push_back(ptr);    
-	connect(this, SIGNAL(setBackgroundMesh(Mesh*)), ptr, SLOT(setBackgroundMesh(Mesh*)));
+	GridPainter<int>* intPainter = new GridPainter<int>(NULL);
+	mPainter.push_back(new QPainter(new GridPainter<Real>((FlagGrid * *)intPainter->getGridPtr()), this));
+	mPainter.push_back(new QPainter(new GridPainter<Vec3>(NULL), this));
+	mPainter.push_back(new QPainter(intPainter, this));
+	mPainter.push_back(new QPainter(new ParticlePainter(intPainter), this));
+	QPainter* meshPtr = new QPainter(new MeshPainter(), this);
+	mPainter.push_back(meshPtr);    
+	connect(this, SIGNAL(setBackgroundMesh(Mesh*)), meshPtr, SLOT(setBackgroundMesh(Mesh*)));
 
 	for (int i=0; i<(int)mPainter.size(); i++) {
 		connect(mGlWidget, SIGNAL(paintSub()), mPainter[i], SLOT(paint()));

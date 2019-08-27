@@ -35,18 +35,6 @@ ParticlePainter::~ParticlePainter() {
 		delete mLocal;
 }
 
-QParticlePainter::QParticlePainter(GridPainter<int>* gridRef, QWidget* par)
-	: ParticlePainter(gridRef), QPainter(par)
-{
-}
-
-QParticlePainter::~QParticlePainter() {
-}
-
-void QParticlePainter::attachWidget(QLayout* layout) {
-	layout->addWidget(mInfo);
-}
-
 void ParticlePainter::update() {
 	ParticleBase* src = (ParticleBase*) mObject;
 	

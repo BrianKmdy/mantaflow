@@ -32,19 +32,6 @@ MeshPainter::~MeshPainter() {
 		delete mLocalMesh;
 }
 
-QMeshPainter::QMeshPainter(QWidget* par)
-	: MeshPainter(), QPainter(par)
-{
-}
-
-QMeshPainter::~QMeshPainter() {
-
-}
-
-void QMeshPainter::attachWidget(QLayout* layout) {
-	layout->addWidget(mInfo);
-}
-
 void MeshPainter::update() {
 	Mesh* src = (Mesh*) mObject;
 	
@@ -101,7 +88,7 @@ void MeshPainter::updateText() {
 	mInfo->setText(s.str().c_str());    
 }
 
-void QMeshPainter::setBackgroundMesh(Mesh* bgr) {
+void MeshPainter::setBackgroundMesh(Mesh* bgr) {
 	mBackground = bgr;
 }
 

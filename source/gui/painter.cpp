@@ -88,11 +88,10 @@ void LockedObjPainter::nextObject() {
 template<class T>
 GridPainter<T>::GridPainter(FlagGrid** flags)
 	: LockedObjPainter(), mMaxVal(0), mDim(0), mPlane(0), mMax(0), mLocalGrid(NULL), 
-	  mFlags(flags), mInfo(NULL), mHide(false), mHideLocal(false), mDispMode(), mValScale()
+	  mFlags(flags), mHide(false), mHideLocal(false), mDispMode(), mValScale()
 {
 	mDim = 2; // Z plane
 	mPlane = 0;
-	mInfo = new QLabel();
 }
 
 template<class T>
@@ -102,40 +101,17 @@ GridPainter<T>::~GridPainter() {
 }
 
 template<class T>
-QGridPainter<T>::QGridPainter(FlagGrid** flags, QWidget* par)
-	: QPainter(par), GridPainter<T>(flags)
-{
-}
-
-template<class T>
-QGridPainter<T>::~QGridPainter()
-{
-}
-
-template<class T>
-void GridPainter<T>::attachWidget(QLayout* layout) {
-	layout->addWidget(mInfo);
-}
-
-template<class T>
-void attachGLWidget(GLWidget* widget) {
-
-}
-
-template<class T>
-void GridPainter<T>::update() { 
-	// XXX/bmoody Implement this
-}
-
-template<class T>
-void QGridPainter<T>::update() {
+void GridPainter<T>::update() {
 	Grid<T>* src = (Grid<T>*) mObject;
 
 	if (!mLocalGrid) {
 		mLocalGrid = new Grid<T>(src->getParent());
 		// int grid is base for resolution
 		if (src->getType() & GridBase::TypeInt)
-			emit setViewport(src->getSize());
+		{
+			mGridSize = src->getSize();
+			mViewPortUpdated = true;
+		}
 	}
 	// reallocate if dimensions changed (or solver)
 	if ((mLocalGrid->getSize() != src->getSize()) || (mLocalGrid->getParent() != src->getParent())) {
@@ -143,7 +119,10 @@ void QGridPainter<T>::update() {
 		mLocalGrid = new Grid<T>(src->getParent());
 		// int grid is base for resolution
 		if (src->getType() & GridBase::TypeInt)
-			emit setViewport(src->getSize());
+		{
+			mGridSize = src->getSize();
+			mViewPortUpdated = true;
+		}
 	}
 
 	mLocalGrid->copyFrom(*src, true); // copy grid data and type marker
@@ -283,8 +262,9 @@ template<> void GridPainter<int>::updateText() {
 	if (mObject) {
 		if(mHide) s <<"(hidden) ";
 		s << "Int Grid '" << mLocalGrid->getName() << "'" << endl;
-	}    
-	mInfo->setText(s.str().c_str());    
+	}
+	// XXX/bmoody Re-enable this
+	// mInfo->setText(s.str().c_str());    
 }
 
 template<> void GridPainter<Real>::updateText() {
@@ -301,7 +281,8 @@ template<> void GridPainter<Real>::updateText() {
 		s << "Real Grid '" << mLocalGrid->getName() << "'" << endl;
 		s << "-> Max " << fixed << setprecision(2) << mMaxVal << endl<<"-> Scale " << getScale() << endl;
 	}
-	mInfo->setText(s.str().c_str());    
+	// XXX/bmoody Re-enable this
+	// mInfo->setText(s.str().c_str());    
 }
 
 template<> void GridPainter<Vec3>::updateText() {
@@ -313,7 +294,8 @@ template<> void GridPainter<Vec3>::updateText() {
 		else
 			s << "-> Max norm " << fixed << setprecision(2) << mMaxVal << endl<<"-> Scale " << getScale() << endl;
 	}
-	mInfo->setText(s.str().c_str());
+	// XXX/bmoody Re-enable this
+	// mInfo->setText(s.str().c_str());
 }
 
 // compute line intersection with the display plane
@@ -405,6 +387,7 @@ void glBox(const Vec3& p0, const Vec3& p1, const float dx) {
 
 // Paint gridlines
 template<> void GridPainter<int>::paint() {
+	std::cout << "painting" << std::endl;
 	 if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 	float dx = mLocalGrid->getDx();
@@ -608,13 +591,13 @@ template<> void GridPainter<Vec3>::paint() {
 	}
 }
 
+void QPainter::attachWidget(QLayout* layout) {
+	layout->addWidget(mInfo);
+}
+
 // explicit instantiation
 template class GridPainter<int>;
 template class GridPainter<Real>;
 template class GridPainter<Vec3>;
-
-template class QGridPainter<int>;
-template class QGridPainter<Real>;
-template class QGridPainter<Vec3>;
 	
 } // namespace

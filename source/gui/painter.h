@@ -26,6 +26,7 @@ namespace Manta {
 	
 // forward decl.
 class PbClass;
+class Mesh;
 
 //! Base class for all painter
 /*! Derived classes have to implement paint, doEvent */
@@ -44,11 +45,22 @@ public:
 	enum RealDisplayModes { RealDispOff=0, RealDispStd, RealDispLevelset, RealDispShadeVol, RealDispShadeSurf, NumRealDispModes }; 
 	enum VecDisplayModes  { VecDispOff=0, VecDispCentered, VecDispStaggered, VecDispUv, NumVecDispModes };
 	
-	Painter() : mGLRenderer(nullptr) {}
+	Painter() : mGLRenderer(nullptr), mGridSize(), mViewPortUpdated(false) {}
 	virtual ~Painter() {}
 	
-	virtual std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
+	std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
 	void attachGLRenderer(glRenderer* renderer) { mGLRenderer = renderer; std::cout << "Attached rednerer " << mGLRenderer << std::endl; }
+
+	virtual void setBackgroundMesh(Mesh* bgr) {}
+	Vec3i getGridSize() {
+		return mGridSize;
+	}
+
+	bool isViewportUpdated() {
+		bool updated = mViewPortUpdated;
+		mViewPortUpdated = false;
+		return updated;
+	}
 	
 public:
 	virtual void paint() = 0;
@@ -56,6 +68,9 @@ public:
 
 protected:
 	glRenderer* mGLRenderer;
+
+	Vec3i mGridSize;
+	bool mViewPortUpdated;
 };
 
 //! Base clas for all painters that require access to a locked PbClass
@@ -125,7 +140,6 @@ public:
 	~GridPainter();
 	
 	void paint();
-	void attachWidget(QLayout* layout);
 	Grid<T>** getGridPtr() { return &mLocalGrid; }
 	int getPlane() { return mPlane; }
 	int getDim()   { return mDim; }
@@ -148,7 +162,6 @@ protected:
 	int         mDim, mPlane, mMax;
 	Grid<T>*    mLocalGrid;    //! currently selected grid
 	FlagGrid**  mFlags;        //! flag grid (can influence display of selected grid)
-	QLabel*     mInfo;         //! info string
 	bool        mHide;         //! hide all grids?
 	bool        mHideLocal;    //! hide only this type?
 	std::map< void*, int > mDispMode; //! display modes , for each object
@@ -157,39 +170,60 @@ protected:
 
 //! Base class for all painter
 /*! Derived classes have to implement paint, doEvent */
-class QPainter : public QObject, public Painter {
+class QPainter : public QObject {
 	Q_OBJECT
 public:
-	QPainter(QWidget* par = 0) : QObject(par), Painter() {}
-	virtual ~QPainter() {}
+	QPainter(Painter* painter, QWidget* par = 0) : QObject(par), mPainter(painter), mInfo(nullptr) {
+		mInfo = new QLabel();
+	}
 
-	virtual std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
+	virtual ~QPainter() {
+		delete mPainter;
+	}
+
+public:
+	std::string clickLine(const Vec3& p0, const Vec3& p1) {
+		if (mPainter)
+			mPainter->clickLine(p0, p1);
+
+		return "";
+	}
+
+	void attachGLRenderer(glRenderer* renderer) {
+		if (mPainter)
+			mPainter->attachGLRenderer(renderer);
+	}
 
 signals:
 	void setViewport(const Vec3i& gridsize);
 
 public slots:
-	virtual void paint() = 0;
-	virtual void doEvent(int e, int param = 0) = 0;
-	virtual void attachWidget(QLayout* layout) {}
-};
-
-//! Painter object for int,Real,Vec3 grids
-template<class T>
-class QGridPainter : public QPainter, public GridPainter<T> {
-public:
-	QGridPainter(FlagGrid** flags = NULL, QWidget* par = 0);
-	~QGridPainter();
-
-	void doEvent(int e, int param = 0) {
-		GridPainter::doEvent(e, param);
+	virtual void paint() {
+		std::cout << "Trying to paint" << std::endl;
+		if (mPainter)
+			mPainter->paint();
+		else
+			std::cout << "null painter" << std::endl;
+	}
+	virtual void doEvent(int e, int param = 0) {
+		if (mPainter)
+		{
+			mPainter->doEvent(e, param);
+			if(mPainter->isViewportUpdated())
+				emit setViewport(mPainter->getGridSize());
+		}
 	}
 
-	void paint() {
-		GridPainter::paint();
+	virtual void attachWidget(QLayout* layout);
+
+	void setBackgroundMesh(Mesh* bgr) {
+		mPainter->setBackgroundMesh(bgr);
 	}
 
-	void update();
+private:
+	Painter* mPainter;
+
+	QLabel* mInfo;         //! info string
 };
 
 }

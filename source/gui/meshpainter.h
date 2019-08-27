@@ -31,6 +31,7 @@ public:
 	~MeshPainter();
 	
 	void paint();
+	void setBackgroundMesh(Mesh* bgr);
 	
 protected:
 	std::string getID();    
@@ -49,26 +50,6 @@ protected:
 	bool mHide;    
 };
 
-class QMeshPainter : public QPainter, public MeshPainter {
-	Q_OBJECT
-public:
-	QMeshPainter(QWidget* par = 0);
-	~QMeshPainter();
-
-	void attachWidget(QLayout* layout);
-
-	void paint() {
-		MeshPainter::paint();
-	}
-
-	void doEvent(int e, int param = 0) {
-		MeshPainter::doEvent(e, param);
-	}
-
-public slots:
-	void setBackgroundMesh(Mesh* bgr);
-};
-	
 } // namespace
 
 #endif

@@ -53,25 +53,6 @@ protected:
 
 	void paintBasicSys();
 };    
-
-//! Painter object for Particle Systems
-class QParticlePainter : public QPainter, public ParticlePainter {
-	Q_OBJECT
-public:
-	QParticlePainter(GridPainter<int>* gridRef, QWidget* par = 0);
-	~QParticlePainter();
-
-	void attachWidget(QLayout* layout);
-
-	void doEvent(int e, int param = 0) {
-		ParticlePainter::doEvent(e, param);
-	}
-
-	void paint() {
-		ParticlePainter::paint();
-	}
-};
-
 	
 } // namespace
 
