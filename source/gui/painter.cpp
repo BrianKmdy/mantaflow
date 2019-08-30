@@ -390,7 +390,7 @@ template<> void GridPainter<int>::paint() {
 	if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
-	if (!setupBuffer())
+	if (!setupBuffer(0) || !setupBuffer(1))
 		return;
 
 	float dx = mLocalGrid->getDx();
@@ -429,9 +429,8 @@ template<> void GridPainter<int>::paint() {
 				addVec(vertices, colors, box[(n / 2) % 4], color, dx);
 		}
 
-		// mGLRenderer->drawLines(mVertexArray, mBuffer, vertices, colors);
+		mGLRenderer->drawLines(mVertexArray[0], mBuffer[0], vertices, colors);
 	}
-	
 	if (rbox) {
 		std::vector<float> vertices;
 		std::vector<float> colors;
@@ -441,7 +440,7 @@ template<> void GridPainter<int>::paint() {
 		addBox(vertices, p0, p1, dx);
 		// glDepthFunc(GL_ALWAYS);
 
-		mGLRenderer->drawLines(mVertexArray, mBuffer, vertices, colors);
+		mGLRenderer->drawLines(mVertexArray[1], mBuffer[1], vertices, colors);
 	}
 }
 
@@ -453,7 +452,7 @@ template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
 		return;
 
-	if (!setupBuffer())
+	if (!setupBuffer(0) || !setupBuffer(1))
 		return;
 	
 	const int dm     = getDispMode();
@@ -461,12 +460,12 @@ template<> void GridPainter<Real>::paint() {
 	const float dx   = mLocalGrid->getDx();
 	Vec3 box[4];
 
-	std::vector<float> vertices;
-	std::vector<float> colors;
-
+	
 	// "new" drawing style 
 	// ignore flags, its a bit dangerous to skip outside info
 	if( (dm==RealDispStd) || (dm==RealDispLevelset) ) {
+		std::vector<float> vertices;
+		std::vector<float> colors;
 
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
 		{ 
@@ -489,9 +488,13 @@ template<> void GridPainter<Real>::paint() {
 
 			addQuad(vertices, colors, box, color, dx);
 		}
-	}
 
+		mGLRenderer->drawTriangles(mVertexArray[0], mBuffer[0], vertices, colors);
+	}
 	if( (dm==RealDispShadeVol) || (dm==RealDispShadeSurf) ) {
+		std::vector<float> vertices;
+		std::vector<float> colors;
+
 		SimpleImage img;
 
 		// note - slightly wasteful, projects all 3 axes!
@@ -512,9 +515,9 @@ template<> void GridPainter<Real>::paint() {
 
 			addQuad(vertices, colors, box, col, dx);
 		}
-	}
 
-	mGLRenderer->drawTriangles(mVertexArray, mBuffer, vertices, colors);
+		mGLRenderer->drawTriangles(mVertexArray[1], mBuffer[1], vertices, colors);
+	}
 }
 
 // Paint velocity vectors
@@ -522,7 +525,7 @@ template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
-	if (!setupBuffer())
+	if (!setupBuffer(0))
 		return;
 
 	const int dm     = getDispMode();
@@ -565,7 +568,7 @@ template<> void GridPainter<Vec3>::paint() {
 			}
 		}
 
-		// mGLRenderer->drawLines(mVertexArray, mBuffer, vertices, colors);
+		mGLRenderer->drawLines(mVertexArray[0], mBuffer[0], vertices, colors);
 	
 	} else if (dm==VecDispUv) {
 		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!

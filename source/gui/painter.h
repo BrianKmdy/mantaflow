@@ -41,7 +41,7 @@ public:
 	enum RealDisplayModes { RealDispOff=0, RealDispStd, RealDispLevelset, RealDispShadeVol, RealDispShadeSurf, NumRealDispModes }; 
 	enum VecDisplayModes  { VecDispOff=0, VecDispCentered, VecDispStaggered, VecDispUv, NumVecDispModes };
 	
-	Painter() : mVertexArray(0), mGLRenderer(nullptr), mBuffer(0), mGridSize(), mViewPortUpdated(false) {}
+	Painter() : mGLRenderer(nullptr), mVertexArray(), mBuffer(), mGridSize(), mViewPortUpdated(false) {}
 	virtual ~Painter() {}
 	
 	std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
@@ -58,18 +58,14 @@ public:
 		return updated;
 	}
 
-	unsigned int setupBuffer() {
-		std::cout << "setting up bufffer " << this << std::endl;
-		if (!mBuffer)
+	unsigned int setupBuffer(int index) {
+		if (!mVertexArray[index] || !mBuffer[index])
 		{
-			std::cout << "Don't have buffer" << std::endl;
-			std::cout << mGLRenderer << std::endl;
 			if (mGLRenderer && mGLRenderer->mInitialized)
-				mGLRenderer->setupBuffer(&mVertexArray, &mBuffer);
-			std::cout << mBuffer << std::endl;
+				mGLRenderer->setupBuffer(&mVertexArray[index], &mBuffer[index]);
+			std::cout << "fetched " << mVertexArray[index] << " " << mBuffer[index] << std::endl;
 		}
-
-		return mBuffer;
+		return mBuffer[index];
 	}
 	
 	virtual void paint() = 0;
@@ -77,8 +73,8 @@ public:
 
 protected:
 	glRenderer* mGLRenderer;
-	unsigned int mBuffer; //! openGL handle for vertex buffer
-	unsigned int mVertexArray;
+	std::map<unsigned int, unsigned int> mVertexArray;
+	std::map<unsigned int, unsigned int> mBuffer; //! openGL handle for vertex buffer
 
 	Vec3i mGridSize;
 	bool mViewPortUpdated;

@@ -123,7 +123,8 @@ void dprintf(const char* fmt, ...)
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
 CMainApplication::CMainApplication(int argc, char* argv[])
-	: m_pCompanionWindow(NULL)
+	: glRenderer()
+	, m_pCompanionWindow(NULL)
 	, m_pContext(NULL)
 	, m_nCompanionWindowWidth(640)
 	, m_nCompanionWindowHeight(320)
@@ -153,6 +154,7 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_iSceneVolumeInit(2)
 	, m_strPoseClasses("")
 	, m_bShowCubes(true)
+	, m_CreatedArrays()
 {
 
 	for (int i = 1; i < argc; i++)
@@ -203,16 +205,27 @@ unsigned int fcounter = 0;
 
 void CMainApplication::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
 {
+	std::cout << vertexArray << std::endl;
+	std::cout << buffer << std::endl;
+	std::cout << *vertexArray << std::endl;
+	std::cout << *buffer << std::endl;
 	glGenVertexArrays(1, vertexArray);
+	std::cout << *vertexArray << std::endl;
 	glBindVertexArray(*vertexArray);
 	glGenBuffers(1, buffer);
+	std::cout << *buffer << std::endl;
 	glBindBuffer(GL_ARRAY_BUFFER , *buffer);
 
-	uintptr_t offset = 0;
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glBindVertexArray(0);
-	glDisableVertexAttribArray(0);
+//	std::cout << "test1" << std::endl;
+//	uintptr_t offset = 0;
+//	glEnableVertexAttribArray(0);
+//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+//	glBindVertexArray(0);
+//	glDisableVertexAttribArray(0);
+//	std::cout << "test2" << std::endl;
+
+
+
 
 
 //	glGenVertexArrays(1, &testarray);
@@ -268,23 +281,28 @@ void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, 
 	matTransform.translate(-3.0f, 0, -0.5f);
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
+	std::vector<unsigned int> indices;
+	for (int i = 0; i < vertices.size() / 3; i++)
+		indices.push_back(i);
+
 	glUseProgram(m_unTestProgramID);
 	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
 	glBindVertexArray(vertexArray);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) 0);
 	// XXX/bmoody Can probably remove this redraw stuff
-	GLint size = 0;
-	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
-	std::cout << "vertexarray " << vertexArray << " buffer " << buffer << std::endl;
-	std::cout << "size " << size << " vertices size " << vertices.size() << std::endl;
-	if (vertices.size() != size) {
+	if (m_CreatedArrays.find(vertexArray) == m_CreatedArrays.end()) {
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STREAM_DRAW);
+		m_CreatedArrays.insert(vertexArray);
 	}
 	else {
-
 		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
 	}
+
 	// glBindVertexArray(vertexArray);
 	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
+	glDisableVertexAttribArray(0);
 	glBindVertexArray(0);
 	glUseProgram(0);
 
@@ -332,20 +350,21 @@ void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buff
 	glUseProgram(m_unTestProgramID);
 	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
 	glBindVertexArray(vertexArray);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
 	// XXX/bmoody Can probably remove this redraw stuff
-	GLint size = 0;
-	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
-	std::cout << "vertexarray " << vertexArray << " buffer " << buffer << std::endl;
-	std::cout << "size " << size << " vertices size " << vertices.size() << std::endl;
-	if (vertices.size() != size) {
+	if (m_CreatedArrays.find(vertexArray) == m_CreatedArrays.end()) {
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STREAM_DRAW);
+		m_CreatedArrays.insert(vertexArray);
 	}
 	else {
-
 		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
 	}
+
 	// glBindVertexArray(vertexArray);
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
+	glDisableVertexAttribArray(0);
 	glBindVertexArray(0);
 	glUseProgram(0);
 

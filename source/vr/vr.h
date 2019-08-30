@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string>
 #include <cstdlib>
+#include <set>
 
 #include <openvr.h>
 
@@ -231,6 +232,8 @@ private: // OpenGL bookkeeping
 	Matrix4 m_mat4ProjectionCenter;
 	Matrix4 m_mat4ProjectionLeft;
 	Matrix4 m_mat4ProjectionRight;
+
+	std::set<unsigned int> m_CreatedArrays;
 
 	struct VertexDataScene
 	{
