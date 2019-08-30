@@ -7,7 +7,7 @@
 
 from manta import *
 
-g = True
+g = False
 
 # solver params
 res = 64

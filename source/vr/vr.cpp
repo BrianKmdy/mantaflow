@@ -6,9 +6,6 @@
 #include <chrono>
 #include <fstream>
 
-#include "painter.h"
-#include "particlepainter.h"
-#include "meshpainter.h"
 //========= Copyright Valve Corporation ============//
 
 void ThreadSleep(unsigned long nMilliseconds)
@@ -20,216 +17,7 @@ usleep(nMilliseconds * 1000);
 #endif
 }
 
-std::chrono::milliseconds start_time = std::chrono::milliseconds(0);
-
 namespace Manta {
-
-std::vector<Painter*> mPainter;
-
-	// Macro to iterate through one plane
-#define FOR_P_SLICE(__g,__dim,__plane) \
-for(Vec3i __g0(__fRange(Vec3i(0,0,0),__dim,__plane)), __g1(__fRange((__g)->getSize(),__dim,__plane+1)), p(__g0); p.z<__g1.z; p.z++) \
-	for(p.y=__g0.y; p.y < __g1.y; p.y++) \
-		for(p.x=__g0.x; p.x < __g1.x; p.x++)
-inline Vec3i __fRange(Vec3i size, int dim, int plane) { Vec3i p(size); p[dim] = plane; return p; }
-
-PbClass* mObject = nullptr;
-int mObjIndex = -1;
-Real        mMaxVal;       //! stats
-int         mDim = 2, mPlane, mMax;
-Grid<Vec3>* mLocalGrid;    //! currently selected grid
-FlagGrid** mFlags;        //! flag grid (can influence display of selected grid)
-QLabel* mInfo;         //! info string
-bool        mHide;         //! hide all grids?
-bool        mHideLocal;    //! hide only this type?
-std::map< void*, int > mDispMode; //! display modes , for each object
-std::map< std::pair<void*, int>, Real> mValScale; //! scaling of values , per object and display mode
-
-
-void getCellCoordinatesVR(const Vec3i& pos, Vec3 box[4], int dim, bool offset = false) {
-	int dim2 = (dim + 1) % 3;
-	Vec3 p0(pos.x, pos.y, pos.z);
-	Vec3 p1(pos.x + 1, pos.y + 1, pos.z + 1);
-	p1[dim] = p0[dim] = pos[dim] + 0.5;
-
-	// display lines with slight offsets
-	if (offset) {
-		p0 += Vec3(0.01);
-		p1 -= Vec3(0.01);
-	}
-
-	box[0] = p0;
-	box[3] = p0; box[3][dim2] = p1[dim2];
-	box[1] = p1; box[1][dim2] = p0[dim2];
-	box[2] = p1;
-}
-
-std::ofstream fout;
-
-static inline void glVertexVR(const Vec3& v, const float dx, std::vector<float>* lines) {
-	float scale = 5.0;
-
-	float x = v.x * dx * scale;
-	x -= 2;
-
-	float y = v.y * dx * scale;
-
-	float z = v.z * dx * scale;
-	z -= 2;
-
-	lines->push_back(z);
-	lines->push_back(y);
-	lines->push_back(x);
-
-	
-	
-}
-
-void glBoxVR(const Vec3& p0, const Vec3& p1, const float dx) {
-	// XXX/bmoody Review this
-	std::vector<float> lines;
-	const int box[24] = { 0,1,0,2,0,4,7,6,7,5,7,3,1,3,1,5,2,3,2,6,4,5,4,6 };
-	for (int i = 0; i < 24; i++) {
-		const int b = box[i];
-		glVertexVR(Vec3((b & 1) ? p1.x : p0.x, (b & 2) ? p1.y : p0.y, (b & 4) ? p1.z : p0.z), dx, &lines);
-	}
-}
-template<typename T>
-void update() {
-	Grid<T>* src = (Grid<T>*) mObject;
-
-	if (!mLocalGrid) {
-		mLocalGrid = new Grid<T>(src->getParent());
-	}
-
-	mLocalGrid->copyFrom(*src, true); // copy grid data and type marker
-	mLocalGrid->setName(src->getName());
-	mLocalGrid->setParent(src->getParent());
-	mMaxVal = mLocalGrid->getMaxAbs();
-
-	mPlane = clamp(mPlane, 0, mLocalGrid->getSize()[mDim] - 1);
-}
-
-void nextObject() {
-	if (PbClass::getNumInstances() == 0) return;
-
-	int oldIndex = mObjIndex;
-	for (;;) {
-		mObjIndex = (mObjIndex + 1) % PbClass::getNumInstances();
-		if (oldIndex == mObjIndex) break;
-
-		PbClass* obj = PbClass::getInstance(mObjIndex);
-		if (obj->canConvertTo("Grid<Vec3>") && !obj->isHidden()) {
-			mObject = obj;
-			update<Vec3>();
-			return;
-		}
-		if (oldIndex < 0) oldIndex = 0; // prevent endless loop on first run
-	}
-}
-
-int getDispMode() {
-	if (!mObject || !mLocalGrid) return Painter::RealDisplayModes::RealDispOff;
-	if (mDispMode.find(mObject) == mDispMode.end()) {
-		int dm = Painter::RealDisplayModes::RealDispStd; // same for vec & real
-		// initialize exceptions, eg levelset
-		if (mLocalGrid->getType() & GridBase::TypeLevelset) dm = Painter::RealDisplayModes::RealDispLevelset;
-		mDispMode[mObject] = dm;
-		return dm;
-	}
-	return mDispMode[mObject];
-}
-
-Real getScale() {
-	if (!mObject) return 0;
-	const int dm = getDispMode();
-	std::pair<void*, int> id; id.first = mObject; id.second = dm;
-
-	if (mValScale.find(id) == mValScale.end()) {
-		// init new scale value
-		Real s = 1.0 - VECTOR_EPSILON;
-		if (mLocalGrid->getType() & GridBase::TypeVec3)
-			s = 0.5 - VECTOR_EPSILON;
-		else if (mLocalGrid->getType() & GridBase::TypeLevelset)
-			s = 1.0;
-		else if (mLocalGrid->getType() & GridBase::TypeReal) {
-			if (dm == Painter::RealDisplayModes::RealDispShadeVol) s = 4.0; // depends a bit on grid size in practice...
-			if (dm == Painter::RealDisplayModes::RealDispShadeSurf) s = 1.0;
-		}
-		mValScale[id] = s;
-	}
-	return mValScale[id];
-
-}
-
-std::vector<float> get_lines() {
-	std::vector<float> lines;
-
-	if (!mObject || mPlane < 0 || mPlane >= mLocalGrid->getSize()[mDim])
-		return lines;
-
-	const int dm = getDispMode();
-	const Real scale = getScale();
-	const float dx = mLocalGrid->getDx();
-	const bool mac = mLocalGrid->getType() & GridBase::TypeMAC;
-
-	if ((dm == Painter::VecDisplayModes::VecDispCentered) || (dm == Painter::VecDisplayModes::VecDispStaggered)) {
-		FOR_P_SLICE(mLocalGrid, mDim, mPlane) {
-			Vec3 vel = mLocalGrid->get(p) * scale;
-			Vec3 pos(p.x + 0.5, p.y + 0.5, p.z + 0.5);
-			if (dm == Painter::VecDisplayModes::VecDispCentered) {
-				if (mac) {
-					if (p.x < mLocalGrid->getSizeX() - 1)
-						vel.x = 0.5 * (vel.x + scale * mLocalGrid->get(p.x + 1, p.y, p.z).x);
-					if (p.y < mLocalGrid->getSizeY() - 1)
-						vel.y = 0.5 * (vel.y + scale * mLocalGrid->get(p.x, p.y + 1, p.z).y);
-					if (p.z < mLocalGrid->getSizeZ() - 1)
-						vel.z = 0.5 * (vel.z + scale * mLocalGrid->get(p.x, p.y, p.z + 1).z);
-				}
-				glVertexVR(pos, dx, &lines);
-				// glVertexVR(pos + vel * 1.2, dx, &lines);
-			}
-			else if (dm == Painter::VecDisplayModes::VecDispStaggered) {
-				for (int d = 0; d < 3; d++) {
-					if (fabs(vel[d]) < 1e-2) continue;
-					Vec3 p1(pos);
-					if (mac)
-						p1[d] -= 0.5f;
-					Vec3 color(0.0);
-					color[d] = 1;
-					glVertexVR(p1, dx, &lines);
-					p1[d] += vel[d];
-					glVertexVR(p1, dx, &lines);
-				}
-			}
-		}
-	}
-	else if (dm == Painter::VecDisplayModes::VecDispUv) {
-		std::cout << "Painting UV" << std::endl;
-		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!
-		Vec3 box[4];
-		// XXX/bmoody Don't want lines here, review
-		FOR_P_SLICE(mLocalGrid, mDim, mPlane)
-		{
-			Vec3 v = mLocalGrid->get(p) * scale;
-			if (mac) {
-				if (p.x < mLocalGrid->getSizeX() - 1) v.x = 0.5 * (v.x + scale * mLocalGrid->get(p.x + 1, p.y, p.z).x);
-				if (p.y < mLocalGrid->getSizeY() - 1) v.y = 0.5 * (v.y + scale * mLocalGrid->get(p.x, p.y + 1, p.z).y);
-				if (p.z < mLocalGrid->getSizeZ() - 1) v.z = 0.5 * (v.z + scale * mLocalGrid->get(p.x, p.y, p.z + 1).z);
-			}
-			for (int c = 0; c < 3; ++c) {
-				if (v[c] < 0.) v[c] *= -1.;
-				v[c] = fmod((Real)v[c], (Real)1.);
-			}
-			//v *= mLocalGrid->get(0)[0]; // debug, show uv grid weight as brightness of values
-			getCellCoordinatesVR(p, box, mDim);
-			for (int n = 0; n < 4; n++)
-				glVertexVR(box[n], dx, &lines);
-		}
-	}
-
-	return lines;
-}
 
 void GLAPIENTRY
 ErrorCallback(GLenum source,
@@ -409,55 +197,169 @@ CMainApplication::~CMainApplication()
 	dprintf("Shutdown");
 }
 
-GLuint CMainApplication::getBufferId()
-{
-	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	return buffer;
-}
+GLuint testarray = 0;
+GLuint testbuffer = 0;
+unsigned int fcounter = 0;
 
+void CMainApplication::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
+{
+	glGenVertexArrays(1, vertexArray);
+	glBindVertexArray(*vertexArray);
+	glGenBuffers(1, buffer);
+	glBindBuffer(GL_ARRAY_BUFFER , *buffer);
+
+	uintptr_t offset = 0;
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindVertexArray(0);
+	glDisableVertexAttribArray(0);
+
+
+//	glGenVertexArrays(1, &testarray);
+//	glBindVertexArray(testarray);
+//	glGenBuffers(1, &testbuffer);
+//	glBindBuffer(GL_ARRAY_BUFFER, testbuffer);
+//	std::vector<float> testdata;
+//	testdata.push_back(0.0);
+//	testdata.push_back(0.0);
+//	testdata.push_back(0.0);
+//	testdata.push_back(-1.0);
+//	testdata.push_back(-1.0);
+//	testdata.push_back(-1.0);
+//	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * testdata.size(), &testdata[0], GL_STATIC_DRAW);
+//
+//	glEnableVertexAttribArray(0);
+//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+//	glBindVertexArray(0);
+//	glDisableVertexAttribArray(0);
+}
 
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
-void CMainApplication::drawLines(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	//std::cout << "Dumping data to disk" << std::endl;
+	//std::string data;
+	//int counter = 0;
+	//for (auto& v : vertices) {
+	//	data += std::to_string(v) + "    ";
+	//	if (++counter % 3 == 0) {
+	//		data += "   ";
+	//		counter = 0;
+	//	}
+	//	if (counter == 15) {
+	//		data += "\n";
+	//		counter = 0;
+	//	}
+	//}
+	//
+	//std::ofstream f;
+	//f.open("vertex_dump_lines_" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
+	//f.write(data.c_str(), data.length());
+	//
+	//std::cout << "Trying to draw lines with buffer " << buffer << std::endl;
+	//std::cout << vertices.size() << " vertices " << colors.size() << " colors" << std::endl;
+	//std::cout << &vertices[0] << std::endl;
+	//std::cout << vertexArray << std::endl;
+	//std::cout << buffer << std::endl;
 
-	int vertexbufsize = vertices.size() * sizeof(float);
-	int colorbufsize = colors.size() * sizeof(float);
-	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+	Matrix4 matScale;
+	matScale.scale(2.0f, 2.0f, 2.0f);
+	Matrix4 matTransform;
+	matTransform.translate(-3.0f, 0, -0.5f);
+	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+	glUseProgram(m_unTestProgramID);
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
+	glBindVertexArray(vertexArray);
+	// XXX/bmoody Can probably remove this redraw stuff
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	std::cout << "vertexarray " << vertexArray << " buffer " << buffer << std::endl;
+	std::cout << "size " << size << " vertices size " << vertices.size() << std::endl;
+	if (vertices.size() != size) {
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STREAM_DRAW);
+	}
+	else {
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
-	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
-
-	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
+	}
+	// glBindVertexArray(vertexArray);
 	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+//	std::vector<float> testdata;
+//	testdata.push_back(0.0);
+//	testdata.push_back(0.0);
+//	testdata.push_back(0.0);
+//	testdata.push_back(-1.0);
+//	testdata.push_back(-1.0);
+//	testdata.push_back(-1.0);
+//	glBindVertexArray(testarray);
+//	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(testdata), &testdata[0]);
+//	glDrawArrays(GL_LINES, 0, testdata.size() / 3);
+//	glBindVertexArray(0);
+	
 }
 
-void CMainApplication::drawTriangles(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	//std::cout << "Dumping data to disk" << std::endl;
+	//std::string data;
+	//int counter = 0;
+	//for (auto& v : vertices) {
+	//	data += std::to_string(v) + "    ";
+	//	if (++counter % 3 == 0) {
+	//		data += "   ";
+	//		counter = 0;
+	//	}
+	//	if (counter == 15) {
+	//		data += "\n";
+	//		counter = 0;
+	//	}
+	//}
+	//
+	//std::ofstream f;
+	//f.open("vertex_dump_triangles_" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
+	//f.write(data.c_str(), data.length());
 
-	int vertexbufsize = vertices.size() * sizeof(float);
-	int colorbufsize = colors.size() * sizeof(float);
-	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+	Matrix4 matScale;
+	matScale.scale(2.0f, 2.0f, 2.0f);
+	Matrix4 matTransform;
+	matTransform.translate(-3.0f, 0, -0.5f);
+	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+	glUseProgram(m_unTestProgramID);
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
+	glBindVertexArray(vertexArray);
+	// XXX/bmoody Can probably remove this redraw stuff
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	std::cout << "vertexarray " << vertexArray << " buffer " << buffer << std::endl;
+	std::cout << "size " << size << " vertices size " << vertices.size() << std::endl;
+	if (vertices.size() != size) {
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STREAM_DRAW);
+	}
+	else {
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
-	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
-
-	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
+	}
+	// glBindVertexArray(vertexArray);
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	// glBindVertexArray(vertexArray);
+	// glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	// glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
+	// glBindVertexArray(0);
+	// 
+	// glUseProgram(m_unTestProgramID);
+	// glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(m_currentEye).get());
+	// glBindVertexArray(vertexArray);
+	// glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
+	// glBindVertexArray(0);
+	// glUseProgram(0);
 }
 
 
@@ -574,10 +476,6 @@ bool CMainApplication::BInit()
 	// 		m_MillisecondsTimer.start(1, this);
 	// 		m_SecondsTimer.start(1000, this);
 
-	printf("Waiting for simulation");
-	std::this_thread::sleep_for(std::chrono::seconds(2));
-	start_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
-
 	if (!BInitGL())
 	{
 		printf("%s - Unable to initialize OpenGL!\n", __FUNCTION__);
@@ -610,13 +508,20 @@ bool CMainApplication::BInit()
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(ErrorCallback, 0);
 
-//	GridPainter<int>* intPainter = new GridPainter<int>(NULL);
-//	mPainter.push_back(new GridPainter<Real>((FlagGrid**)intPainter->getGridPtr()));
-	mPainter.push_back(new GridPainter<Vec3>(NULL));
-//	mPainter.push_back(intPainter);
-//	mPainter.push_back(new ParticlePainter(intPainter));
-//	MeshPainter* ptr = new MeshPainter();
-//	mPainter.push_back(ptr);
+	GridPainter<int>* intPainter = new GridPainter<int>(NULL);
+	mPainter.push_back(new VRPainter(new GridPainter<Real>((FlagGrid**)intPainter->getGridPtr())));
+	mPainter.push_back(new VRPainter(new GridPainter<Vec3>(NULL)));
+	mPainter.push_back(new VRPainter(intPainter));
+	// mPainter.push_back(new VRPainter(new ParticlePainter(intPainter)));
+	// VRPainter* meshPtr = new VRPainter(new MeshPainter());
+	// mPainter.push_back(meshPtr);
+
+	for (auto& painter : mPainter) {
+		painter->attachGLRenderer(this);
+		painter->doEvent(Painter::UpdateFull);
+	}
+
+	mInitialized = true;
 
 	return true;
 }
@@ -689,9 +594,6 @@ bool CMainApplication::BInitGL()
 
 	if (!CreateAllShaders())
 		return false;
-
-	if (!mObject)
-		nextObject();
 
 	SetupTexturemaps();
 	SetupScene();
@@ -891,20 +793,11 @@ void CMainApplication::RunMainLoop()
 	{
 		bQuit = HandleInput();
 
-		if(!mObject)
-			nextObject();
+		for (auto& painter : mPainter) {
+			painter->doEvent(Painter::UpdateStep);
+		}
 
 		RenderFrame();
-
-//		auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) - start_time;
-//
-//		auto lines = std::vector<float>();
-//		lines.push_back(0 - time_elapsed.count() * 0.0005);
-//		lines.push_back(0 + time_elapsed.count() * 0.0005);
-//		lines.push_back(0);
-//		lines.push_back(-0.5 - time_elapsed.count() * 0.0005);
-//		lines.push_back(0.5 + time_elapsed.count() * 0.0005);
-//		lines.push_back(0);
 	}
 
 	SDL_StopTextInput();
@@ -1519,6 +1412,8 @@ void CMainApplication::RenderStereoTargets()
 }
 
 
+GLuint vertexArray = 0;
+
 //-----------------------------------------------------------------------------
 // Purpose: Renders a scene with respect to nEye.
 //-----------------------------------------------------------------------------
@@ -1537,15 +1432,13 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	// glBindVertexArray(0);
 	// glUseProgram(0);
 
-	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(nEye).get());
+	m_currentEye = nEye;
 
-	for (auto& p : mPainter)
+	for (auto& painter : mPainter)
 	{
-		p->paint();
+		painter->paint();
 	}
 
-	glUseProgram(0);
 
 
 //	auto lines = get_lines();

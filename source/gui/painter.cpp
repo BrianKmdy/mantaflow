@@ -387,52 +387,61 @@ void glBox(const Vec3& p0, const Vec3& p1, const float dx) {
 
 // Paint gridlines
 template<> void GridPainter<int>::paint() {
-	std::cout << "painting" << std::endl;
-	 if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
+	if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
+
+	if (!setupBuffer())
+		return;
+
 	float dx = mLocalGrid->getDx();
 	Vec3 box[4];
-	glColor3f(0.5,0,0);
+	Vec3 color = Vec3(0.5,0,0);
 	
 	bool rbox = true;
 	bool skipFluid = mLocalGrid->getSize().max() >= 64; 
-	bool drawLines = mLocalGrid->getSize().max() <= 80; 
+	bool drawLines = mLocalGrid->getSize().max() <= 80;
+
 	if (drawLines) {
-		//glDepthFunc(GL_LESS);
-		glBegin(GL_LINES);
+		std::vector<float> vertices;
+		std::vector<float> colors;
+
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) {
 
 			int flag = 0;
 			flag = mLocalGrid->get(p);
 
+			Vec3 color;
 			if (flag & FlagGrid::TypeObstacle) {
-				glColor3f(0.2,0.2,0.2); // dark gray
+				color = Vec3(0.2,0.2,0.2); // dark gray
 			} else if (flag & FlagGrid::TypeOutflow) {
-				glColor3f(0.9,0.3,0);   // orange
+				color = Vec3(0.9,0.3,0);   // orange
 			} else if (flag & FlagGrid::TypeEmpty) {
-				glColor3f(0.25,0,0.2);  // dark purple
+				color = Vec3(0.25,0,0.2);  // dark purple
 			} else if (flag & FlagGrid::TypeFluid) {
 				if(skipFluid) continue;
-				glColor3f(0,0,0.75);    // blue
+				color = Vec3(0,0,0.75);    // blue
 			} else {
-				glColor3f(0.5,0,0); // unknown , medium red
+				color = Vec3(0.5,0,0); // unknown , medium red
 			}
 
 			getCellCoordinates(p, box, mDim, true); 
 			for (int n=1;n<=8;n++)
-				glVertex(box[(n/2)%4], dx);
+				addVec(vertices, colors, box[(n / 2) % 4], color, dx);
 		}
-		glEnd();
-		//glDepthFunc(GL_ALWAYS);        
+
+		// mGLRenderer->drawLines(mVertexArray, mBuffer, vertices, colors);
 	}
 	
 	if (rbox) {
+		std::vector<float> vertices;
+		std::vector<float> colors;
+
 		Vec3 p0(0.0), p1(toVec3(mLocalGrid->getSize())),p(p0);
-		glDepthFunc(GL_LESS);
-		glBegin(GL_LINES);
-		glBox(p0,p1,dx);
-		glEnd();
-		glDepthFunc(GL_ALWAYS);        
+		// glDepthFunc(GL_LESS);
+		addBox(vertices, p0, p1, dx);
+		// glDepthFunc(GL_ALWAYS);
+
+		mGLRenderer->drawLines(mVertexArray, mBuffer, vertices, colors);
 	}
 }
 
@@ -480,8 +489,6 @@ template<> void GridPainter<Real>::paint() {
 
 			addQuad(vertices, colors, box, color, dx);
 		}
-
-		mGLRenderer->drawTriangles(mBuffer, vertices, colors);
 	}
 
 	if( (dm==RealDispShadeVol) || (dm==RealDispShadeSurf) ) {
@@ -501,14 +508,13 @@ template<> void GridPainter<Real>::paint() {
 		   	if(mDim==0) col = img.get( s[0]    + p[2], p[1] );
 		   	if(mDim==1) col = img.get( s[0]+s[2]+p[0], p[2] );
 
-			//glColor3f(col.x,col.y,col.z); 
 			getCellCoordinates(p, box, mDim);
-			//for (int n=0;n<4;n++) 
-			//	glVertex(box[n], dx);
+
+			addQuad(vertices, colors, box, col, dx);
 		}
 	}
 
-	// glEnd();    
+	mGLRenderer->drawTriangles(mVertexArray, mBuffer, vertices, colors);
 }
 
 // Paint velocity vectors
@@ -516,12 +522,8 @@ template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
-	std::cout << "Setting up buffer" << std::endl;
-
 	if (!setupBuffer())
 		return;
-
-	std::cout << "Painting" << std::endl;
 
 	const int dm     = getDispMode();
 	const Real scale = getScale();
@@ -563,7 +565,7 @@ template<> void GridPainter<Vec3>::paint() {
 			}
 		}
 
-		mGLRenderer->drawLines(mBuffer, vertices, colors);
+		// mGLRenderer->drawLines(mVertexArray, mBuffer, vertices, colors);
 	
 	} else if (dm==VecDispUv) {
 		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!
@@ -589,10 +591,6 @@ template<> void GridPainter<Vec3>::paint() {
 		}
 		// glEnd();    
 	}
-}
-
-void QPainter::attachWidget(QLayout* layout) {
-	layout->addWidget(mInfo);
 }
 
 // explicit instantiation

@@ -32,9 +32,9 @@ public:
 	QSize minimumSizeHint() const;
 	QSize sizeHint() const;
 
-	GLuint getBufferId();
-	void drawLines(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors);
-	void drawTriangles(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors);
+	void setupBuffer(unsigned int* vertexArray, unsigned int* buffer);
+	void drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
+	void drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
 
 	void mousePressEvent(QMouseEvent *e);
 	void mouseMoveEvent(QMouseEvent *e);

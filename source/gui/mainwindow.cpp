@@ -320,5 +320,8 @@ void MainWnd::screenshot(QString file) {
 	mGlWidget->screenshot(file);
 }
 
+void QPainter::attachWidget(QLayout* layout) {
+	layout->addWidget(mInfo);
+}
 
 }

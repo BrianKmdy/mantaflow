@@ -68,16 +68,14 @@ void GLWidget::initializeGL()
 	glClearDepth(1.0);    
 }
 
-GLuint GLWidget::getBufferId()
+void GLWidget::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
 {
-	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	return buffer;
+	glGenBuffers(1, buffer);
 }
 
 
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
-void GLWidget::drawLines(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+void GLWidget::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
@@ -98,7 +96,7 @@ void GLWidget::drawLines(GLuint buffer, std::vector<float>& vertices, std::vecto
 	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
 }
 
-void GLWidget::drawTriangles(GLuint buffer, std::vector<float>& vertices, std::vector<float>& colors)
+void GLWidget::drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 

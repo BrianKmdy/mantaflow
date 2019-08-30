@@ -1,6 +1,7 @@
 #pragma once
 
 //========= Copyright Valve Corporation ============//
+#define VR
 #ifdef VR
 
 #include <SDL.h>
@@ -26,6 +27,9 @@
 #include "shared/pathtools.h"
 
 #include "glrenderer.h"
+#include "painter.h"
+#include "particlepainter.h"
+#include "meshpainter.h"
 
 
 #if defined(POSIX)
@@ -45,6 +49,52 @@ static bool g_bPrintf = true;
 
 namespace Manta {
 
+
+class VRPainter {
+public:
+	VRPainter(Painter* painter) : mPainter(painter) {
+	}
+
+	~VRPainter() {
+		delete mPainter;
+	}
+
+public:
+	std::string clickLine(const Vec3& p0, const Vec3& p1) {
+		if (mPainter)
+			mPainter->clickLine(p0, p1);
+
+		return "";
+	}
+
+	void attachGLRenderer(glRenderer* renderer) {
+		if (mPainter)
+			mPainter->attachGLRenderer(renderer);
+	}
+
+public:
+	virtual void paint() {
+		if (mPainter)
+			mPainter->paint();
+	}
+
+	virtual void doEvent(int e, int param = 0) {
+		if (mPainter)
+		{
+			mPainter->doEvent(e, param);
+			//	if (mPainter->isViewportUpdated())
+			//		emit setViewport(mPainter->getGridSize());
+		}
+	}
+
+	void setBackgroundMesh(Mesh* bgr) {
+		mPainter->setBackgroundMesh(bgr);
+	}
+
+private:
+	Painter* mPainter;
+};
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //------------------------------------------------------------------------------
@@ -54,9 +104,9 @@ public:
 	CMainApplication(int argc, char* argv[]);
 	virtual ~CMainApplication();
 
-	unsigned int getBufferId();
-	void drawLines(unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
-	void drawTriangles(unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colrs);
+	void setupBuffer(unsigned int* vertexArray, unsigned int* buffer);
+	void drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
+	void drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colrs);
 
 	bool BInit();
 	bool BInitGL();
@@ -91,6 +141,8 @@ public:
 	GLuint CompileGLShader(const char* pchShaderName, const char* pchVertexShader, const char* pchFragmentShader);
 	bool CreateAllShaders();
 
+	bool m_Initialized;
+
 private:
 	bool m_bDebugOpenGL;
 	bool m_bVerbose;
@@ -103,6 +155,7 @@ private:
 	std::string m_strDisplay;
 	vr::TrackedDevicePose_t m_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
 	Matrix4 m_rmat4DevicePose[vr::k_unMaxTrackedDeviceCount];
+	vr::Hmd_Eye m_currentEye;
 
 	struct ControllerInfo_t
 	{
@@ -127,6 +180,7 @@ private: // SDL bookkeeping
 	uint32_t m_nCompanionWindowHeight;
 
 	SDL_GLContext m_pContext;
+	std::vector<VRPainter*> mPainter;
 
 private: // OpenGL bookkeeping
 	int m_iTrackedControllerCount;

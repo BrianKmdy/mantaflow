@@ -46,7 +46,8 @@ protected:
 	VorticityMode mVorticityMode;
 	BackgroundMode mBackgroundMode;    
 	Mesh* mLocalMesh, *mBackground;
-	QLabel* mInfo;
+	// XXX/bmoody Re-enable this
+	// QLabel* mInfo;
 	bool mHide;    
 };
 

@@ -14,10 +14,6 @@
 #ifndef _PAINTER_H_
 #define _PAINTER_H_
 
-// #define VR
-
-#include <QWidget>
-#include <QLabel>
 #include <map>
 #include "grid.h"
 #include "glrenderer.h"
@@ -45,7 +41,7 @@ public:
 	enum RealDisplayModes { RealDispOff=0, RealDispStd, RealDispLevelset, RealDispShadeVol, RealDispShadeSurf, NumRealDispModes }; 
 	enum VecDisplayModes  { VecDispOff=0, VecDispCentered, VecDispStaggered, VecDispUv, NumVecDispModes };
 	
-	Painter() : mGLRenderer(nullptr), mGridSize(), mViewPortUpdated(false) {}
+	Painter() : mVertexArray(0), mGLRenderer(nullptr), mBuffer(0), mGridSize(), mViewPortUpdated(false) {}
 	virtual ~Painter() {}
 	
 	std::string clickLine(const Vec3& p0, const Vec3& p1) { return ""; }
@@ -61,13 +57,28 @@ public:
 		mViewPortUpdated = false;
 		return updated;
 	}
+
+	unsigned int setupBuffer() {
+		std::cout << "setting up bufffer " << this << std::endl;
+		if (!mBuffer)
+		{
+			std::cout << "Don't have buffer" << std::endl;
+			std::cout << mGLRenderer << std::endl;
+			if (mGLRenderer && mGLRenderer->mInitialized)
+				mGLRenderer->setupBuffer(&mVertexArray, &mBuffer);
+			std::cout << mBuffer << std::endl;
+		}
+
+		return mBuffer;
+	}
 	
-public:
 	virtual void paint() = 0;
 	virtual void doEvent(int e, int param=0) = 0;
 
 protected:
 	glRenderer* mGLRenderer;
+	unsigned int mBuffer; //! openGL handle for vertex buffer
+	unsigned int mVertexArray;
 
 	Vec3i mGridSize;
 	bool mViewPortUpdated;
@@ -78,7 +89,7 @@ protected:
 class LockedObjPainter : public Painter {
 public:
 	LockedObjPainter() :
-		Painter(), mRequestUpdate(false), mObject(NULL), mObjIndex(-1), mBuffer(0) {}
+		Painter(), mRequestUpdate(false), mObject(NULL), mObjIndex(-1) {}
 
 	void doEvent(int e, int param=0); // don't overload, use processKeyEvent and update instead
 	
@@ -87,19 +98,6 @@ protected:
 	virtual std::string getID() = 0;
 	virtual void update() = 0;
 	virtual void processKeyEvent(PainterEvent e, int param) = 0;
-
-	unsigned int setupBuffer() {
-		if (!mBuffer)
-		{
-			std::cout << "Don't have buffer" << std::endl;
-			std::cout << mGLRenderer << std::endl;
-			if (mGLRenderer)
-				mBuffer = mGLRenderer->getBufferId();
-			std::cout << mBuffer << std::endl;
-		}
-
-		return mBuffer;
-	}
 
 	void addVec(std::vector<float>& vertices, std::vector<float>& colors, Vec3 vertex, Vec3 color, float mod = 1.0) {
 		vertices.push_back(vertex.x * mod);
@@ -125,11 +123,21 @@ protected:
 			colors.push_back(color.z);
 		}
 	}
+
+	void addBox(std::vector<float>& vertices, Vec3& p0, const Vec3& p1, const float mod) {
+		const int box[24] = { 0,1,0,2,0,4,7,6,7,5,7,3,1,3,1,5,2,3,2,6,4,5,4,6 };
+		for (int i = 0; i < 24; i++) {
+			const int b = box[i];
+			Vec3 v = Vec3((b & 1) ? p1.x : p0.x, (b & 2) ? p1.y : p0.y, (b & 4) ? p1.z : p0.z);
+			vertices.push_back(v.x * mod);
+			vertices.push_back(v.y * mod);
+			vertices.push_back(v.z * mod);
+		}
+	}
 	
 	bool     mRequestUpdate;
 	PbClass* mObject;
 	int      mObjIndex;
-	unsigned int mBuffer; //! openGL handle for vertex buffer
 };
 
 //! Painter object for int,Real,Vec3 grids
@@ -166,64 +174,6 @@ protected:
 	bool        mHideLocal;    //! hide only this type?
 	std::map< void*, int > mDispMode; //! display modes , for each object
 	std::map< std::pair<void*, int>, Real> mValScale; //! scaling of values , per object and display mode
-};
-
-//! Base class for all painter
-/*! Derived classes have to implement paint, doEvent */
-class QPainter : public QObject {
-	Q_OBJECT
-public:
-	QPainter(Painter* painter, QWidget* par = 0) : QObject(par), mPainter(painter), mInfo(nullptr) {
-		mInfo = new QLabel();
-	}
-
-	virtual ~QPainter() {
-		delete mPainter;
-	}
-
-public:
-	std::string clickLine(const Vec3& p0, const Vec3& p1) {
-		if (mPainter)
-			mPainter->clickLine(p0, p1);
-
-		return "";
-	}
-
-	void attachGLRenderer(glRenderer* renderer) {
-		if (mPainter)
-			mPainter->attachGLRenderer(renderer);
-	}
-
-signals:
-	void setViewport(const Vec3i& gridsize);
-
-public slots:
-	virtual void paint() {
-		std::cout << "Trying to paint" << std::endl;
-		if (mPainter)
-			mPainter->paint();
-		else
-			std::cout << "null painter" << std::endl;
-	}
-	virtual void doEvent(int e, int param = 0) {
-		if (mPainter)
-		{
-			mPainter->doEvent(e, param);
-			if(mPainter->isViewportUpdated())
-				emit setViewport(mPainter->getGridSize());
-		}
-	}
-
-	virtual void attachWidget(QLayout* layout);
-
-	void setBackgroundMesh(Mesh* bgr) {
-		mPainter->setBackgroundMesh(bgr);
-	}
-
-private:
-	Painter* mPainter;
-
-	QLabel* mInfo;         //! info string
 };
 
 }

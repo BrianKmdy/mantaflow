@@ -24,7 +24,8 @@ MeshPainter::MeshPainter()
 	: LockedObjPainter(), mColorScale(1.0), mMode(ModeFlatShade), mVorticityMode(VModeNone), 
 	mBackgroundMode(BModeNormal), mLocalMesh(0) , mBackground(0), mHide(false)
 {    
-	mInfo = new QLabel();
+	// XXX/bmoody Re-enable this
+	// mInfo = new QLabel();
 }
 
 MeshPainter::~MeshPainter() {
@@ -85,7 +86,8 @@ void MeshPainter::updateText() {
 			if (mVorticityMode!=VModeNone) s << "  Scale " << 1.0/mColorScale << "" << endl;
 		}
 	}
-	mInfo->setText(s.str().c_str());    
+	// XXX/bmoody Re-enable this
+	// mInfo->setText(s.str().c_str());    
 }
 
 void MeshPainter::setBackgroundMesh(Mesh* bgr) {

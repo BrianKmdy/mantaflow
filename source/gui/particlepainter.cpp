@@ -27,7 +27,8 @@ ParticlePainter::ParticlePainter(GridPainter<int>* gridRef)
 	: LockedObjPainter(), mGridRef(gridRef), mLocal(0), mMode(PaintVel), mDisplayMode(0),
 	mLastPdata(-1), mHavePdata(false), mMaxVal(0.)
 {    
-	mInfo = new QLabel();
+	// XXX/bmoody Re-enable this
+	// mInfo = new QLabel();
 }
 
 ParticlePainter::~ParticlePainter() {
@@ -90,7 +91,9 @@ void ParticlePainter::updateText() {
 			s << "-> Max " << fixed << setprecision(2) << mMaxVal << "  Scale " << getScale() << endl;
 		}
 	}
-	mInfo->setText( s.str().c_str() );    
+
+	// XXX/bmoody Re-enable this
+	//mInfo->setText( s.str().c_str() );    
 }
 
 

@@ -38,7 +38,8 @@ protected:
 	
 	GridPainter<int>* mGridRef;
 	ParticleBase* mLocal;
-	QLabel* mInfo;
+	// XXX/bmoody Re-enable this
+	// QLabel* mInfo;
 
 	//! for standard particle systems, this is used to select the data channel (display is changed with displayMode below)
 	int mMode; 
