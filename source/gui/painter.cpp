@@ -437,7 +437,7 @@ template<> void GridPainter<int>::paint() {
 
 		Vec3 p0(0.0), p1(toVec3(mLocalGrid->getSize())),p(p0);
 		// glDepthFunc(GL_LESS);
-		addBox(vertices, p0, p1, dx);
+		addBox(vertices, colors, p0, p1, Vec3(0.5, 0, 0), dx);
 		// glDepthFunc(GL_ALWAYS);
 
 		mGLRenderer->drawLines(mVertexArray[1], mBuffer[1], vertices, colors);

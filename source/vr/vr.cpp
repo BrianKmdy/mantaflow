@@ -281,28 +281,24 @@ void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, 
 	matTransform.translate(-3.0f, 0, -0.5f);
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
-	std::vector<unsigned int> indices;
-	for (int i = 0; i < vertices.size() / 3; i++)
-		indices.push_back(i);
-
 	glUseProgram(m_unTestProgramID);
 	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+	// XXX/bmoody Can probably just call this on setup if we have vertex count
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (vertices.size() + colors.size()), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), colors.size() * sizeof(float), &colors[0]);
+
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) 0);
-	// XXX/bmoody Can probably remove this redraw stuff
-	if (m_CreatedArrays.find(vertexArray) == m_CreatedArrays.end()) {
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STREAM_DRAW);
-		m_CreatedArrays.insert(vertexArray);
-	}
-	else {
-		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
-	}
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) (vertices.size() * sizeof(float)));
 
-	// glBindVertexArray(vertexArray);
 	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
 	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 	glBindVertexArray(0);
 	glUseProgram(0);
 
@@ -351,20 +347,21 @@ void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buff
 	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+	// XXX/bmoody Can probably just call this on setup if we have vertex count
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (vertices.size() + colors.size()), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), colors.size() * sizeof(float), &colors[0]);
+
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
-	// XXX/bmoody Can probably remove this redraw stuff
-	if (m_CreatedArrays.find(vertexArray) == m_CreatedArrays.end()) {
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STREAM_DRAW);
-		m_CreatedArrays.insert(vertexArray);
-	}
-	else {
-		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
-	}
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) (vertices.size() * sizeof(float)));
 
 	// glBindVertexArray(vertexArray);
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
 	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 	glBindVertexArray(0);
 	glUseProgram(0);
 
@@ -1094,16 +1091,21 @@ bool CMainApplication::CreateAllShaders()
 		"#version 410\n"
 		"uniform mat4 matrix;\n"
 		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec3 v3ColorIn;\n"
+		"out vec4 v4Color;\n"
 		"void main()\n"
 		"{\n"
+		"	v4Color.xyz = v3ColorIn; v4Color.a = 1.0;\n"
 		"	gl_Position = matrix * position;\n"
 		"}\n",
 
+		// fragment shader
 		"#version 410\n"
+		"in vec4 v4Color;\n"
 		"out vec4 outputColor;\n"
 		"void main()\n"
 		"{\n"
-		"        outputColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+		"   outputColor = v4Color;\n"
 		"}\n"
 		);
 	m_nTestMatrixLocation = glGetUniformLocation(m_unTestProgramID, "matrix");
@@ -1253,6 +1255,7 @@ void CMainApplication::SetupScene()
 	glDisableVertexAttribArray(1);
 
 	// Add the test buffers
+	// XXX/bmoody Remove this
 	glGenVertexArrays(1, &m_unTestVAO);
 	glGenBuffers(1, &m_glTestBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, m_glTestBuffer);

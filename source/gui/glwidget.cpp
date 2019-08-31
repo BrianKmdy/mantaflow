@@ -77,6 +77,7 @@ void GLWidget::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
 void GLWidget::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
+	std::cout << "Drawing lines" << std::endl;
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
 	int vertexbufsize = vertices.size() * sizeof(float);

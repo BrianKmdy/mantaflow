@@ -120,7 +120,7 @@ protected:
 		}
 	}
 
-	void addBox(std::vector<float>& vertices, Vec3& p0, const Vec3& p1, const float mod) {
+	void addBox(std::vector<float>& vertices, std::vector<float>& colors, Vec3& p0, const Vec3& p1, Vec3 color, const float mod = 1.0) {
 		const int box[24] = { 0,1,0,2,0,4,7,6,7,5,7,3,1,3,1,5,2,3,2,6,4,5,4,6 };
 		for (int i = 0; i < 24; i++) {
 			const int b = box[i];
@@ -128,6 +128,9 @@ protected:
 			vertices.push_back(v.x * mod);
 			vertices.push_back(v.y * mod);
 			vertices.push_back(v.z * mod);
+			colors.push_back(color.x);
+			colors.push_back(color.y);
+			colors.push_back(color.z);
 		}
 	}
 	

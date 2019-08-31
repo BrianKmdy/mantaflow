@@ -1,7 +1,6 @@
 #pragma once
 
 //========= Copyright Valve Corporation ============//
-#define VR
 #ifdef VR
 
 #include <SDL.h>
