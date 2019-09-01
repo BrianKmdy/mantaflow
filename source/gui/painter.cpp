@@ -112,6 +112,7 @@ void GridPainter<T>::update() {
 			mGridSize = src->getSize();
 			mViewPortUpdated = true;
 		}
+		std::cout << "No local grid" << std::endl;
 	}
 	// reallocate if dimensions changed (or solver)
 	if ((mLocalGrid->getSize() != src->getSize()) || (mLocalGrid->getParent() != src->getParent())) {
@@ -122,7 +123,9 @@ void GridPainter<T>::update() {
 		{
 			mGridSize = src->getSize();
 			mViewPortUpdated = true;
+			std::cout << "type int" << std::endl;
 		}
+		std::cout << "change size or parent" << std::endl;
 	}
 
 	mLocalGrid->copyFrom(*src, true); // copy grid data and type marker
@@ -436,11 +439,11 @@ template<> void GridPainter<int>::paint() {
 		std::vector<float> colors;
 
 		Vec3 p0(0.0), p1(toVec3(mLocalGrid->getSize())),p(p0);
-		// glDepthFunc(GL_LESS);
 		addBox(vertices, colors, p0, p1, Vec3(0.5, 0, 0), dx);
-		// glDepthFunc(GL_ALWAYS);
 
+		glDepthFunc(GL_LESS);
 		mGLRenderer->drawLines(mVertexArray[1], mBuffer[1], vertices, colors);
+		glDepthFunc(GL_ALWAYS);
 	}
 }
 

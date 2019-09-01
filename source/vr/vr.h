@@ -1,6 +1,7 @@
 #pragma once
 
 //========= Copyright Valve Corporation ============//
+#define VR
 #ifdef VR
 
 #include <SDL.h>
@@ -82,13 +83,27 @@ public:
 		if (mPainter)
 		{
 			mPainter->doEvent(e, param);
-			//	if (mPainter->isViewportUpdated())
-			//		emit setViewport(mPainter->getGridSize());
 		}
 	}
 
 	void setBackgroundMesh(Mesh* bgr) {
 		mPainter->setBackgroundMesh(bgr);
+	}
+
+	bool isViewportUpdated() {
+		if (mPainter->isViewportUpdated())
+			return true;
+
+		return false;
+	}
+
+	Vec3i getGridSize()
+	{
+		if (mPainter) {
+			return mPainter->getGridSize();
+		}
+
+		return Vec3i();
 	}
 
 private:
@@ -107,6 +122,8 @@ public:
 	void setupBuffer(unsigned int* vertexArray, unsigned int* buffer);
 	void drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
 	void drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colrs);
+
+	void setViewport(const Vec3i& gridsize);
 
 	bool BInit();
 	bool BInitGL();
@@ -149,6 +166,9 @@ private:
 	bool m_bPerf;
 	bool m_bVblank;
 	bool m_bGlFinishHack;
+
+	Vec3i mGridsize;
+	int   mPlaneDim, mPlane;
 
 	vr::IVRSystem* m_pHMD;
 	std::string m_strDriver;

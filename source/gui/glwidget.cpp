@@ -35,6 +35,9 @@ GLWidget::GLWidget(QWidget* p): QGLWidget(QGLFormat(QGL::SampleBuffers), p), mRo
 	setAutoBufferSwap(true);
 	setFocusPolicy(Qt::ClickFocus);
 	startTimer(10);
+
+	// XXX/bmoody Remove this
+	mInitialized = true;
 }
 
 GLWidget::~GLWidget()
@@ -71,13 +74,13 @@ void GLWidget::initializeGL()
 void GLWidget::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
 {
 	glGenBuffers(1, buffer);
+	*vertexArray = 1;
 }
 
 
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
 void GLWidget::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
-	std::cout << "Drawing lines" << std::endl;
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
 	int vertexbufsize = vertices.size() * sizeof(float);

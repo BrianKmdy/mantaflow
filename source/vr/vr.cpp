@@ -139,6 +139,9 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_bPerf(false)
 	, m_bVblank(false)
 	, m_bGlFinishHack(true)
+	, mGridsize(0)
+	, mPlaneDim(2)
+	, mPlane(-1)
 	, m_glControllerVertBuffer(0)
 	, m_unControllerVAO(0)
 	, m_unSceneVAO(0)
@@ -203,6 +206,17 @@ GLuint testarray = 0;
 GLuint testbuffer = 0;
 unsigned int fcounter = 0;
 
+Matrix4 getModdedMatrix() {
+	Matrix4 matScale;
+	matScale.scale(2.5f, 2.5f, 2.5f);
+	Matrix4 matTransform;
+	matTransform.translate(-3.0f, 0, 0.8f);
+	Matrix4 matRotate;
+	matRotate.rotate(90.0f, Vector3(0, 1, 0));
+
+	return matTransform * matScale * matRotate;
+}
+
 void CMainApplication::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
 {
 	std::cout << vertexArray << std::endl;
@@ -250,39 +264,35 @@ void CMainApplication::setupBuffer(unsigned int* vertexArray, unsigned int* buff
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
 void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
-	//std::cout << "Dumping data to disk" << std::endl;
-	//std::string data;
-	//int counter = 0;
-	//for (auto& v : vertices) {
-	//	data += std::to_string(v) + "    ";
-	//	if (++counter % 3 == 0) {
-	//		data += "   ";
-	//		counter = 0;
-	//	}
-	//	if (counter == 15) {
-	//		data += "\n";
-	//		counter = 0;
-	//	}
-	//}
-	//
-	//std::ofstream f;
-	//f.open("vertex_dump_lines_" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
-	//f.write(data.c_str(), data.length());
-	//
+	// std::cout << "Dumping data to disk" << std::endl;
+	// std::string data;
+	// int counter = 0;
+	// for (auto& v : vertices) {
+	// 	data += std::to_string(v) + "    ";
+	// 	if (++counter % 3 == 0) {
+	// 		data += "   ";
+	// 		counter = 0;
+	// 	}
+	// 	if (counter == 15) {
+	// 		data += "\n";
+	// 		counter = 0;
+	// 	}
+	// }
+	// 
+	// std::ofstream f;
+	// f.open("vertex_dump_lines_" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
+	// f.write(data.c_str(), data.length());
+	
 	//std::cout << "Trying to draw lines with buffer " << buffer << std::endl;
 	//std::cout << vertices.size() << " vertices " << colors.size() << " colors" << std::endl;
 	//std::cout << &vertices[0] << std::endl;
 	//std::cout << vertexArray << std::endl;
 	//std::cout << buffer << std::endl;
 
-	Matrix4 matScale;
-	matScale.scale(2.0f, 2.0f, 2.0f);
-	Matrix4 matTransform;
-	matTransform.translate(-3.0f, 0, -0.5f);
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
@@ -337,14 +347,10 @@ void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buff
 	//f.open("vertex_dump_triangles_" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
 	//f.write(data.c_str(), data.length());
 
-	Matrix4 matScale;
-	matScale.scale(2.0f, 2.0f, 2.0f);
-	Matrix4 matTransform;
-	matTransform.translate(-3.0f, 0, -0.5f);
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * matTransform * matScale).get());
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
@@ -378,6 +384,24 @@ void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buff
 	// glUseProgram(0);
 }
 
+void CMainApplication::setViewport(const Vec3i& gridsize) {
+	if (mGridsize.x != gridsize.x ||
+		mGridsize.y != gridsize.y ||
+		mGridsize.z != gridsize.z) {
+		if (mPlane < 0) {
+			mPlane = gridsize[mPlaneDim] / 2;
+		}
+		else {
+			Real fac = (Real)gridsize[mPlaneDim] / (Real)mGridsize[mPlaneDim];
+			mPlane = (int)(fac * mPlane);
+		}
+		mGridsize = gridsize;
+		for (auto& painter : mPainter) {
+			painter->doEvent(Painter::EventSetMax, mGridsize[mPlaneDim]);
+			painter->doEvent(Painter::EventSetPlane, mPlane);
+		}
+	}
+}
 
 
 //-----------------------------------------------------------------------------
@@ -528,13 +552,16 @@ bool CMainApplication::BInit()
 	mPainter.push_back(new VRPainter(new GridPainter<Real>((FlagGrid**)intPainter->getGridPtr())));
 	mPainter.push_back(new VRPainter(new GridPainter<Vec3>(NULL)));
 	mPainter.push_back(new VRPainter(intPainter));
-	// mPainter.push_back(new VRPainter(new ParticlePainter(intPainter)));
+	mPainter.push_back(new VRPainter(new ParticlePainter(intPainter)));
 	// VRPainter* meshPtr = new VRPainter(new MeshPainter());
 	// mPainter.push_back(meshPtr);
 
 	for (auto& painter : mPainter) {
 		painter->attachGLRenderer(this);
 		painter->doEvent(Painter::UpdateFull);
+		if (painter->isViewportUpdated()) {
+			setViewport(painter->getGridSize());
+		}
 	}
 
 	mInitialized = true;
@@ -795,6 +822,8 @@ bool CMainApplication::HandleInput()
 	return bRet;
 }
 
+int frameCount = 0;
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -810,7 +839,9 @@ void CMainApplication::RunMainLoop()
 		bQuit = HandleInput();
 
 		for (auto& painter : mPainter) {
-			painter->doEvent(Painter::UpdateStep);
+			painter->doEvent(Painter::UpdateRequest);
+			if(painter->isViewportUpdated())
+				setViewport(painter->getGridSize());
 		}
 
 		RenderFrame();

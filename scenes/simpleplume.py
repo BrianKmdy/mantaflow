@@ -7,7 +7,7 @@
 
 from manta import *
 
-g = True
+g = False
 
 # solver params
 res = 64
@@ -51,7 +51,7 @@ for t in range(250):
 	advectSemiLagrange(flags=flags, vel=vel, grid=vel    , order=2, strength=1.0)
 	
 	setWallBcs(flags=flags, vel=vel)    
-	addBuoyancy(density=density, vel=vel, gravity=vec3(0,-6e-4,0), flags=flags)
+	addBuoyancy(density=density, vel=vel, gravity=vec3(0,-6e-3,0), flags=flags)
 	
 	solvePressure( flags=flags, vel=vel, pressure=pressure )
 	s.step()
