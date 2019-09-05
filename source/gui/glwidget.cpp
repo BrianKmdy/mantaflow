@@ -121,6 +121,11 @@ void GLWidget::drawTriangles(unsigned int vertexArray, unsigned int buffer, std:
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
 }
 
+void GLWidget::drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals)
+{
+	// Do nothing
+}
+
 void GLWidget::paintGL()
 {
 	if (mGridsize.max() == 0) return;

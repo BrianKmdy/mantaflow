@@ -43,6 +43,7 @@ flags.updateFromLevelset(phi)
 if doOpen:
 	setOpenBound(flags,bWidth,'xXzZ',FlagOutflow|FlagEmpty) 
 		
+GUI = False		
 if (GUI):
 	gui = Gui()
 	gui.show()

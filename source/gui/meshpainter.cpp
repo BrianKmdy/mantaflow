@@ -148,6 +148,9 @@ static inline void glNormal(const Vec3& v) {
 void MeshPainter::paint() {
 	if (!mObject || mHide || !mLocalMesh) return;
 
+	if (!setupBuffer(0) || !setupBuffer(1) || !setupBuffer(2))
+		return;
+
 	Real dx = mLocalMesh->getParent()->getDx();
 	
 	bool triColor = (mMode == ModeFlatShade) && (mLocalMesh->getType() == Mesh::TypeVortexSheet) && (mVorticityMode!=VModeNone);
@@ -155,41 +158,46 @@ void MeshPainter::paint() {
 	
 	// setup OpenGL lighting and material
 	const float isoAlpha = 0.4;  
-	setupLights(false);
-	glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
-	glEnable(GL_COLOR_MATERIAL);
+	// setupLights(false);
+	// glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+	// glEnable(GL_COLOR_MATERIAL);
 	glDepthFunc(GL_LESS);        
 	//glDisable(GL_CULL_FACE); 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-			
-	// draw background        
+	
+	Vec4 color4;
+	// draw background
 	if (mBackground != NULL && mBackgroundMode != BModeInvisible) {
 		if (mBackgroundMode != BModeTrans) {
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
-			glColor3f(0.3,0.3,0.5);        
+			color4 = Vec4(0.3, 0.3, 0.5, 1.0);
 		} else {
 			glEnable(GL_BLEND);
 			glDisable(GL_DEPTH_TEST);
-			glColor4f(0.6,0.6,0.8,0.5);        
+			color4 = Vec4(0.6, 0.6, 0.8, 0.5);
 		}        
 		glEnable(GL_CULL_FACE);
 		glPolygonOffset(1.0, 0.5);
-		glBegin(GL_TRIANGLES);        
+
+		std::vector<float> vertices;
+		std::vector<float> colors;
+		std::vector<float> normals;
 				
 		for(int tri=0; tri<mBackground->numTris(); tri++) {
 			Vec3 normal = mBackground->getFaceNormal(tri);
 			for (int c=0; c<3; c++) {
-				glNormal(normal);
-				glVertex(mBackground->getNode(tri,c), dx);                
+				addNormalVec(vertices, colors, normals, mBackground->getNode(tri, c), color4, normal, dx);   
 			}
 		}
-		glEnd();        
+
+		// XXX/bmoody Draw
+
 		glPolygonOffset(1., 1.);
 		glDisable(GL_CULL_FACE);        
 	}
 	
-	setupLights(true);
+	// setupLights(true);
 	if (mMode == ModeFlatShade) {
 		glDisable(GL_BLEND);
 		glEnable(GL_DEPTH_TEST);
@@ -203,9 +211,12 @@ void MeshPainter::paint() {
 	// draw triangles        
 	if (mMode == ModeFlatShade || mMode == ModeTrans) 
 	{
-		glEnable(GL_CULL_FACE);    
+		glEnable(GL_CULL_FACE);
 		glPolygonOffset(1.0, 0.5);
-		glBegin(GL_TRIANGLES);        
+		
+		std::vector<float> vertices;
+		std::vector<float> colors;
+		std::vector<float> normals;
 		
 		const int numTris = (int)mLocalMesh->numTris();
 		for(int tri=0; tri<numTris; tri++) {
@@ -217,14 +228,13 @@ void MeshPainter::paint() {
 				if (mVorticityMode == VModeSmoke) v = info.smokeAmount / 20.0f;
 			
 				Vec3 ca = v * 20.0 * mColorScale;
-				Vec3 color = Vec3(fabs(ca.x),fabs(ca.y),fabs(ca.z));  
-				glColor3f(color.x, color.y, color.z);
+				color4 = Vec4(fabs(ca.x),fabs(ca.y),fabs(ca.z), 1.0);
 			} else if (mLocalMesh->isTriangleFixed(tri))
-				glColor3f(0,1,0);
+				color4 = Vec4(0, 1, 0, 1);
 			else if (mLocalMesh->tris(tri).flags & Mesh::FfMarked)
-				glColor3f(1,0,0);
+				color4 = Vec4(1, 0, 0, 1);
 			else
-				glColor4f(0.5,0.7,1.0, isoAlpha); // blue-ish
+				color4 = Vec4(0.5, 0.7, 1.0, isoAlpha);
 				
 			for (int c=0; c<3; c++) {
 				if (nodeColor) {
@@ -233,58 +243,66 @@ void MeshPainter::paint() {
 					//Vec3 tc = gAlpha*tc1+(1-gAlpha)*tc2;
 					tc = mColorScale * (tc / toVec3(mLocalMesh->getParent()->getGridSize()));
 					tc = nmod(tc, Vec3(1,1,1));
-					glColor3f(tc.x, tc.y ,tc.z);
+					color4 = Vec4(tc.x, tc.y, tc.z, 1.0);
 				}
-				glNormal(mLocalMesh->getFaceNormal(tri));
-				glVertex(mLocalMesh->getNode(tri,c), dx);
+				addNormalVec(vertices, colors, normals, mLocalMesh->getNode(tri, c), color4, mLocalMesh->getFaceNormal(tri), dx);
 			}
 		}
-		glEnd();        
+
+		mGLRenderer->drawNormalTriangles(mVertexArray[0], mBuffer[0], vertices, colors, normals);
+
 		glPolygonOffset(1., 1.);
 		glDisable(GL_CULL_FACE);        
 	}
 
 	// Disable light setup
-	glDisable(GL_BLEND);
-	glDisable(GL_LIGHT0);
-	glDisable(GL_LIGHT1);
-	glDisable(GL_LIGHT2);
-	glDisable(GL_LIGHTING);
-	glDisable(GL_COLOR_MATERIAL);
-	glDisable(GL_TEXTURE_2D);
+	// glDisable(GL_BLEND);
+	// glDisable(GL_LIGHT0);
+	// glDisable(GL_LIGHT1);
+	// glDisable(GL_LIGHT2);
+	// glDisable(GL_LIGHTING);
+	// glDisable(GL_COLOR_MATERIAL);
+	// glDisable(GL_TEXTURE_2D);
 	
 	// draw mesh lines
+	Vec3 color3;
 	if(mMode == ModeLines) {
-		glColor3d(1.0, 0.9, 0.9);
+		std::vector<float> vertices;
+		std::vector<float> colors;
+
+		color3 = Vec3(1.0, 0.9, 0.9);
 		glLineWidth(1.0);
-		glBegin(GL_LINES);
 		const int numTris = (int)mLocalMesh->numTris();
 		for(int tri=0; tri<numTris; tri++)
 			for (int j=5; j<5+6; j++)
-				glVertex( mLocalMesh->getNode(tri,(j/2)%3), dx);
-		glEnd();
+				addVec(vertices, colors, mLocalMesh->getNode(tri, (j / 2) % 3), color3, dx);
+		
+		// XXX/bmoody Draw lines
 	}
 	
 	// draw vertex points
 	if(mMode == ModePoints) {
 		static const Vec3 colorSpecial (0.3, 0.5, 0.2);
 		//static const Vec3 colortable[] = { Vec3(0.5), Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1) };
+
+		std::vector<float> vertices;
+		std::vector<float> colors;
 	
 		glPointSize(2.0);
-		glBegin(GL_POINTS);
 		const int numNodes = (int)mLocalMesh->numNodes();
 		for(int i=0; i<numNodes; i++) {
-			Vec3 color(0.5, 0.5, 0.5);
+			color3 =  Vec3(0.5, 0.5, 0.5);
 			if (mLocalMesh->isNodeFixed(i))
-				color = Vec3(0,1,0);
+				color3 = Vec3(0,1,0);
 			else if (mLocalMesh->nodes(i).flags & Mesh::NfMarked)
-				color = Vec3(1,0,0);
+				color3 = Vec3(1,0,0);
 			//int flags = mLocalMesh->flags(i);
 			
-			glColor3f(color.x, color.y, color.z);
-			glVertex(mLocalMesh->nodes(i).pos, dx);
+			addVec(vertices, colors, mLocalMesh->nodes(i).pos, color3, dx);
 		}
-		glEnd();
+		
+		// XXX/bmoody Draw points
+
 		glPointSize(1.0);
 	}    
 }

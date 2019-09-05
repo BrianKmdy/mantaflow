@@ -104,6 +104,19 @@ protected:
 		colors.push_back(color.z);
 	}
 
+	void addNormalVec(std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals, Vec3 vertex, Vec4 color, Vec3 normal, float mod = 1.0) {
+		vertices.push_back(vertex.x * mod);
+		vertices.push_back(vertex.y * mod);
+		vertices.push_back(vertex.z * mod);
+		colors.push_back(color.x);
+		colors.push_back(color.y);
+		colors.push_back(color.z);
+		colors.push_back(color.t);
+		normals.push_back(normal.x);
+		normals.push_back(normal.y);
+		normals.push_back(normal.z);
+	}
+
 	void addQuad(std::vector<float>& vertices, std::vector<float>& colors, Vec3 boxVertices[4], Vec3 color, float mod = 1.0)
 	{
 		// Iterate over the index values needed to make this quad

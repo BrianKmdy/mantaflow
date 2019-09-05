@@ -122,6 +122,7 @@ public:
 	void setupBuffer(unsigned int* vertexArray, unsigned int* buffer);
 	void drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
 	void drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colrs);
+	void drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals);
 
 	void setViewport(const Vec3i& gridsize);
 
@@ -273,11 +274,15 @@ private: // OpenGL bookkeeping
 	GLuint m_unControllerTransformProgramID;
 	GLuint m_unRenderModelProgramID;
 	GLuint m_unTestProgramID;
+	GLuint m_unMeshProgramID;
 
 	GLint m_nSceneMatrixLocation;
 	GLint m_nControllerMatrixLocation;
 	GLint m_nRenderModelMatrixLocation;
 	GLint m_nTestMatrixLocation;
+	GLint m_nMeshViewLocation;
+	GLint m_nMeshModelLocation;
+	GLint m_nMeshLightLocation;
 
 	struct FramebufferDesc
 	{

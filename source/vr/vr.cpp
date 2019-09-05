@@ -28,8 +28,10 @@ ErrorCallback(GLenum source,
 	const GLchar* message,
 	const void* userParam)
 {
-
-	std::cout << message << std::endl;
+	if (severity != GL_DEBUG_SEVERITY_NOTIFICATION)
+	{
+		std::cout << message << std::endl;
+	}
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -133,6 +135,7 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_unControllerTransformProgramID(0)
 	, m_unRenderModelProgramID(0)
 	, m_unTestProgramID(0)
+	, m_unMeshProgramID(0)
 	, m_pHMD(NULL)
 	, m_bDebugOpenGL(false)
 	, m_bVerbose(false)
@@ -150,6 +153,9 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_nControllerMatrixLocation(-1)
 	, m_nRenderModelMatrixLocation(-1)
 	, m_nTestMatrixLocation(-1)
+	, m_nMeshViewLocation(-1)
+	, m_nMeshModelLocation(-1)
+	, m_nMeshLightLocation(-1)
 	, m_iTrackedControllerCount(0)
 	, m_iTrackedControllerCount_Last(-1)
 	, m_iValidPoseCount(0)
@@ -328,25 +334,6 @@ void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, 
 
 void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
-	//std::cout << "Dumping data to disk" << std::endl;
-	//std::string data;
-	//int counter = 0;
-	//for (auto& v : vertices) {
-	//	data += std::to_string(v) + "    ";
-	//	if (++counter % 3 == 0) {
-	//		data += "   ";
-	//		counter = 0;
-	//	}
-	//	if (counter == 15) {
-	//		data += "\n";
-	//		counter = 0;
-	//	}
-	//}
-	//
-	//std::ofstream f;
-	//f.open("vertex_dump_triangles_" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
-	//f.write(data.c_str(), data.length());
-
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
@@ -370,18 +357,58 @@ void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buff
 	glDisableVertexAttribArray(1);
 	glBindVertexArray(0);
 	glUseProgram(0);
+}
+
+void CMainApplication::drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals)
+{
+//	std::cout << "Dumping data to disk" << std::endl;
+//	std::string data;
+//	int counter = 0;
+//	for (auto& v : colors) {
+//		data += std::to_string(v) + "    ";
+//		if (++counter % 3 == 0) {
+//			data += "   ";
+//			counter = 0;
+//		}
+//		if (counter == 15) {
+//			data += "\n";
+//			counter = 0;
+//		}
+//	}
+//	
+//	std::ofstream f;
+//	f.open("color_dump_triangles" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
+//	f.write(data.c_str(), data.length());
+
+	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
+	Matrix4 matModel = getModdedMatrix();
+
+	glUseProgram(m_unMeshProgramID);
+	glUniformMatrix4fv(m_nMeshViewLocation, 1, GL_FALSE, matView.get());
+	glUniformMatrix4fv(m_nMeshModelLocation, 1, GL_FALSE, matModel.get());
+	glBindVertexArray(vertexArray);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+
+	// XXX/bmoody Can probably just call this on setup if we have vertex count
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (vertices.size() + colors.size() + normals.size()), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), colors.size() * sizeof(float), &colors[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, (vertices.size() + colors.size()) * sizeof(float), normals.size() * sizeof(float), &normals[0]);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, false, 4 * sizeof(float), (GLvoid*) (vertices.size() * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) ((vertices.size() + colors.size()) * sizeof(float)));
 
 	// glBindVertexArray(vertexArray);
-	// glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	// glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
-	// glBindVertexArray(0);
-	// 
-	// glUseProgram(m_unTestProgramID);
-	// glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, GetCurrentViewProjectionMatrix(m_currentEye).get());
-	// glBindVertexArray(vertexArray);
-	// glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
-	// glBindVertexArray(0);
-	// glUseProgram(0);
+	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 void CMainApplication::setViewport(const Vec3i& gridsize) {
@@ -553,8 +580,8 @@ bool CMainApplication::BInit()
 	mPainter.push_back(new VRPainter(new GridPainter<Vec3>(NULL)));
 	mPainter.push_back(new VRPainter(intPainter));
 	mPainter.push_back(new VRPainter(new ParticlePainter(intPainter)));
-	// VRPainter* meshPtr = new VRPainter(new MeshPainter());
-	// mPainter.push_back(meshPtr);
+	VRPainter* meshPtr = new VRPainter(new MeshPainter());
+	mPainter.push_back(meshPtr);
 
 	for (auto& painter : mPainter) {
 		painter->attachGLRenderer(this);
@@ -1146,11 +1173,61 @@ bool CMainApplication::CreateAllShaders()
 		return false;
 	}
 
+	m_unMeshProgramID = CompileGLShader(
+		"mesh",
+
+		// Vertex Shader
+		"#version 410\n"
+		"uniform mat4 view;\n"
+		"uniform mat4 model;\n"
+		"uniform vec3 light;\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec4 v4ColorIn;\n"
+		"layout(location = 2) in vec3 v3NormalIn;\n"
+		"out vec4 v4Color;\n"
+		"out vec3 v3Normal;\n"
+		"void main()\n"
+		"{\n"
+		"	v4Color = v4ColorIn + vec4(light.xyz, 0);\n"
+		"   v3Normal = v3NormalIn;\n"
+		"	gl_Position = view * model * position;\n"
+		"}\n",
+
+		// Fragment Shader
+		"#version 410\n"
+		"in vec4 v4Color;\n"
+		"out vec4 outputColor;\n"
+		"void main()\n"
+		"{\n"
+		"   float ambientStrength = 0.1;\n"
+		"   outputColor = ambientStrength * v4Color;\n"
+		"}\n"
+	);
+	m_nMeshViewLocation = glGetUniformLocation(m_unMeshProgramID, "view");
+	if (m_nMeshViewLocation == -1)
+	{
+		dprintf("Unable to find view uniform in scene shader\n");
+		return false;
+	}
+	m_nMeshModelLocation = glGetUniformLocation(m_unMeshProgramID, "model");
+	if (m_nMeshModelLocation == -1)
+	{
+		dprintf("Unable to find model uniform in scene shader\n");
+		return false;
+	}
+	m_nMeshLightLocation = glGetUniformLocation(m_unMeshProgramID, "light");
+	if (m_nMeshLightLocation == -1)
+	{
+		dprintf("Unable to find light uniform in scene shader\n");
+		return false;
+	}
+
 	return m_unSceneProgramID != 0
 		&& m_unControllerTransformProgramID != 0
 		&& m_unRenderModelProgramID != 0
 		&& m_unCompanionWindowProgramID != 0
-		&& m_unTestProgramID != 0;
+		&& m_unTestProgramID != 0
+		&& m_unMeshProgramID;
 }
 
 //-----------------------------------------------------------------------------
