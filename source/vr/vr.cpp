@@ -128,8 +128,8 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	: glRenderer()
 	, m_pCompanionWindow(NULL)
 	, m_pContext(NULL)
-	, m_nCompanionWindowWidth(640)
-	, m_nCompanionWindowHeight(320)
+	, m_nCompanionWindowWidth(1920)
+	, m_nCompanionWindowHeight(1080)
 	, m_unSceneProgramID(0)
 	, m_unCompanionWindowProgramID(0)
 	, m_unControllerTransformProgramID(0)
@@ -212,15 +212,42 @@ GLuint testarray = 0;
 GLuint testbuffer = 0;
 unsigned int fcounter = 0;
 
-Matrix4 getModdedMatrix() {
-	Matrix4 matScale;
-	matScale.scale(2.5f, 2.5f, 2.5f);
-	Matrix4 matTransform;
-	matTransform.translate(-3.0f, 0, 0.8f);
-	Matrix4 matRotate;
-	matRotate.rotate(90.0f, Vector3(0, 1, 0));
+Vec3 min;
+Vec3 max;
 
-	return matTransform * matScale * matRotate;
+Matrix4 getModdedMatrix(std::vector<float>& vertices) {
+	for (int i = 0; i < vertices.size(); ++i) {
+		if (i % 3 == 0) {
+			if (vertices[i] < min.x)
+				min.x = vertices[i];
+			if (vertices[i] > max.x)
+				max.x = vertices[i];
+		}
+
+		if (i % 3 == 1) {
+			if (vertices[i] < min.y)
+				min.y = vertices[i];
+			if (vertices[i] > max.y)
+				max.y = vertices[i];
+		}
+
+		if (i % 3 == 2) {
+			if (vertices[i] < min.z)
+				min.z = vertices[i];
+			if (vertices[i] > max.z)
+				max.z = vertices[i];
+		}
+	}
+
+	Matrix4 matModelTranslate;
+	matModelTranslate.translate(-((max.x - min.x) / 2), -((max.y - min.y) / 2), -((max.z - min.z) / 2));
+
+	Matrix4 matScale;
+	matScale.scale(3.0f, 3.0f, 3.0f);
+	Matrix4 matTransform;
+	matTransform.translate(0, 1.0f, 5.0f);
+
+	return matTransform * matScale * matModelTranslate;
 }
 
 void CMainApplication::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
@@ -298,7 +325,7 @@ void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, 
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix(vertices)).get());
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
@@ -337,7 +364,7 @@ void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buff
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix(vertices)).get());
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
@@ -381,11 +408,12 @@ void CMainApplication::drawNormalTriangles(unsigned int vertexArray, unsigned in
 //	f.write(data.c_str(), data.length());
 
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
-	Matrix4 matModel = getModdedMatrix();
+	Matrix4 matModel = getModdedMatrix(vertices);
 
 	glUseProgram(m_unMeshProgramID);
 	glUniformMatrix4fv(m_nMeshViewLocation, 1, GL_FALSE, matView.get());
 	glUniformMatrix4fv(m_nMeshModelLocation, 1, GL_FALSE, matModel.get());
+	glUniform3f(m_nMeshLightLocation, 0.0f, 10.0f, 0);
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
@@ -473,9 +501,8 @@ bool CMainApplication::BInit()
 		return false;
 	}
 
-
-	int nWindowPosX = 700;
-	int nWindowPosY = 100;
+	int nWindowPosX = 320;
+	int nWindowPosY = 180;
 	Uint32 unWindowFlags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -1180,27 +1207,34 @@ bool CMainApplication::CreateAllShaders()
 		"#version 410\n"
 		"uniform mat4 view;\n"
 		"uniform mat4 model;\n"
-		"uniform vec3 light;\n"
 		"layout(location = 0) in vec4 position;\n"
 		"layout(location = 1) in vec4 v4ColorIn;\n"
 		"layout(location = 2) in vec3 v3NormalIn;\n"
 		"out vec4 v4Color;\n"
 		"out vec3 v3Normal;\n"
+		"out vec3 v3FragPos;\n"
 		"void main()\n"
 		"{\n"
-		"	v4Color = v4ColorIn + vec4(light.xyz, 0);\n"
-		"   v3Normal = v3NormalIn;\n"
+		"	v4Color = v4ColorIn;\n"
+		"   v3Normal = mat3(transpose(inverse(model))) * v3NormalIn;\n"
+		"   v3FragPos = vec3(model * position);\n"
 		"	gl_Position = view * model * position;\n"
 		"}\n",
 
 		// Fragment Shader
 		"#version 410\n"
+		"uniform vec3 light;\n"
 		"in vec4 v4Color;\n"
+		"in vec3 v3Normal;\n"
+		"in vec3 v3FragPos;\n"
 		"out vec4 outputColor;\n"
 		"void main()\n"
 		"{\n"
-		"   float ambientStrength = 0.1;\n"
-		"   outputColor = ambientStrength * v4Color;\n"
+		"   float ambient = 0.1;\n"
+		"   vec3 norm = normalize(v3Normal);\n"
+		"   vec3 lightDir = normalize(light - v3FragPos);\n"
+		"   float diffuse = max(dot(norm, lightDir), 0.0);\n"
+		"   outputColor = (ambient + diffuse) * v4Color;\n"
 		"}\n"
 	);
 	m_nMeshViewLocation = glGetUniformLocation(m_unMeshProgramID, "view");

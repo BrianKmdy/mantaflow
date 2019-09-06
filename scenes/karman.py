@@ -53,6 +53,7 @@ cgIter = 5
 
 timings = Timings()
 
+GUI = False
 if (GUI):
 	gui = Gui()
 	gui.show()
