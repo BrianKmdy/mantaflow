@@ -23,6 +23,10 @@
 namespace Manta {
 	extern void guiMain(int argc, char* argv[]);
 	extern void guiWaitFinish();
+
+#ifdef VR
+	CMainApplication* gMainApplication;
+#endif
 }
 
 using namespace std;
@@ -117,15 +121,15 @@ int main(int argc,char* argv[]) {
 		for (int i = 1; i < argc; i++) args.push_back(argv[i]);
 		std::thread script_thread(runScript, args);
 
-		CMainApplication* pMainApplication = new CMainApplication(argc, argv);
+		gMainApplication = new CMainApplication(argc, argv);
 
-		if (!pMainApplication->BInit())
+		if (!gMainApplication->BInit())
 		{
-			pMainApplication->Shutdown();
+			gMainApplication->Shutdown();
 			return 1;
 		}
 
-		pMainApplication->RunMainLoop();
+		gMainApplication->RunMainLoop();
 
 		// XXX/bmoody Re-enable this to shutdown properly
 		// script_thread.join();

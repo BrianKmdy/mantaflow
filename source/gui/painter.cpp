@@ -31,6 +31,7 @@ void LockedObjPainter::doEvent(int e, int param) {
 		
 	// filter update events
 	if (e == UpdateFull) {
+		std::cout << "udpate full" << std::endl;
 		// always update
 		if (mObject) {
 			mObject->lock();
@@ -40,6 +41,7 @@ void LockedObjPainter::doEvent(int e, int param) {
 		}
 	} else if (e == UpdateRequest) {
 		// update if resource is available, otherwise wait until next step
+		std::cout << "update request" << std::endl;
 		mRequestUpdate = true;        
 		if (mObject) {
 			if (mObject->tryLock()) {
@@ -49,6 +51,7 @@ void LockedObjPainter::doEvent(int e, int param) {
 			}
 		}
 	} else if (e == UpdateStep) {
+		std::cout << "update step" << std::endl;
 		// update if requested only
 		if (mRequestUpdate) {
 			if (mObject) {
@@ -65,6 +68,7 @@ void LockedObjPainter::doEvent(int e, int param) {
 }
 
 void LockedObjPainter::nextObject() {
+	std::cout << "next object" << std::endl;
 	if (PbClass::getNumInstances() == 0) return;
 	
 	int oldIndex = mObjIndex;
@@ -225,6 +229,7 @@ void GridPainter<int>::processSpecificKeyEvent(PainterEvent e, int param) {
 template<>
 void GridPainter<Real>::processSpecificKeyEvent(PainterEvent e, int param) {
 	if (e == EventNextReal) {
+		std::cout << "next real" << std::endl;
 		nextObject();
 		mHideLocal = (getDispMode()==VecDispOff); 
 	} else if (e == EventScaleRealDown && mObject) {
@@ -244,6 +249,7 @@ void GridPainter<Real>::processSpecificKeyEvent(PainterEvent e, int param) {
 template<>
 void GridPainter<Vec3>::processSpecificKeyEvent(PainterEvent e, int param) {
 	if (e == EventNextVec) {
+		std::cout << "next vec" << std::endl;
 		nextObject();
 		mHideLocal = (getDispMode()==VecDispOff); 
 	} else if (e == EventScaleVecDown && mObject) {

@@ -14,6 +14,7 @@
 #include "customctrl.h"
 #include "qtmain.h"
 #include "painter.h"
+#include "general.h"
 
 using namespace std;
 
@@ -161,11 +162,24 @@ void Gui::screenshot(string filename) {
 	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "screenshot", Q_ARG(QString, s));    
 }
 
+#ifndef VR
 void Gui::nextRealGrid() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextRealGrid" ); }
 void Gui::nextVec3Grid() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextVec3Grid" ); }
 void Gui::nextParts()    { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextParts" ); }
 void Gui::nextPdata()    { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextPdata" ); }
 void Gui::nextMesh()     { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextMesh" ); }
+#else
+extern void nextRealGridVR();
+extern void nextVec3GridVR();
+extern void nextPartsVR();
+extern void nextPdataVR();
+extern void nextMeshVR();
+void Gui::nextRealGrid() { nextRealGridVR(); }
+void Gui::nextVec3Grid() { nextVec3GridVR(); }
+void Gui::nextParts() { nextPartsVR(); }
+void Gui::nextPdata() { nextPdataVR(); }
+void Gui::nextMesh() { nextMeshVR(); }
+#endif
 
 void Gui::nextVec3Display() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextVec3Display" ); }
 void Gui::nextPartDisplay() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextPartDisplay" ); }

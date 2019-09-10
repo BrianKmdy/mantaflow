@@ -5,6 +5,7 @@
 #include <thread>
 #include <chrono>
 #include <fstream>
+#include <mutex>
 
 //========= Copyright Valve Corporation ============//
 
@@ -18,6 +19,8 @@ usleep(nMilliseconds * 1000);
 }
 
 namespace Manta {
+
+std::mutex paint;
 
 void GLAPIENTRY
 ErrorCallback(GLenum source,
@@ -164,6 +167,7 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_strPoseClasses("")
 	, m_bShowCubes(true)
 	, m_CreatedArrays()
+	, m_plane(0)
 {
 
 	for (int i = 1; i < argc; i++)
@@ -243,9 +247,9 @@ Matrix4 getModdedMatrix(std::vector<float>& vertices) {
 	matModelTranslate.translate(-((max.x - min.x) / 2), -((max.y - min.y) / 2), -((max.z - min.z) / 2));
 
 	Matrix4 matScale;
-	matScale.scale(3.0f, 3.0f, 3.0f);
+	matScale.scale(1.5f, 1.5f, 1.5f);
 	Matrix4 matTransform;
-	matTransform.translate(-1.0f, 1.0f, -4.0f);
+	matTransform.translate(0.0f, 1.0f, -1.5f);
 
 	return matTransform * matScale * matModelTranslate;
 }
@@ -262,66 +266,11 @@ void CMainApplication::setupBuffer(unsigned int* vertexArray, unsigned int* buff
 	glGenBuffers(1, buffer);
 	std::cout << *buffer << std::endl;
 	glBindBuffer(GL_ARRAY_BUFFER , *buffer);
-
-//	std::cout << "test1" << std::endl;
-//	uintptr_t offset = 0;
-//	glEnableVertexAttribArray(0);
-//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-//	glBindVertexArray(0);
-//	glDisableVertexAttribArray(0);
-//	std::cout << "test2" << std::endl;
-
-
-
-
-
-//	glGenVertexArrays(1, &testarray);
-//	glBindVertexArray(testarray);
-//	glGenBuffers(1, &testbuffer);
-//	glBindBuffer(GL_ARRAY_BUFFER, testbuffer);
-//	std::vector<float> testdata;
-//	testdata.push_back(0.0);
-//	testdata.push_back(0.0);
-//	testdata.push_back(0.0);
-//	testdata.push_back(-1.0);
-//	testdata.push_back(-1.0);
-//	testdata.push_back(-1.0);
-//	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * testdata.size(), &testdata[0], GL_STATIC_DRAW);
-//
-//	glEnableVertexAttribArray(0);
-//	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-//	glBindVertexArray(0);
-//	glDisableVertexAttribArray(0);
 }
 
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
 void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
 {
-	// std::cout << "Dumping data to disk" << std::endl;
-	// std::string data;
-	// int counter = 0;
-	// for (auto& v : vertices) {
-	// 	data += std::to_string(v) + "    ";
-	// 	if (++counter % 3 == 0) {
-	// 		data += "   ";
-	// 		counter = 0;
-	// 	}
-	// 	if (counter == 15) {
-	// 		data += "\n";
-	// 		counter = 0;
-	// 	}
-	// }
-	// 
-	// std::ofstream f;
-	// f.open("vertex_dump_lines_" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
-	// f.write(data.c_str(), data.length());
-	
-	//std::cout << "Trying to draw lines with buffer " << buffer << std::endl;
-	//std::cout << vertices.size() << " vertices " << colors.size() << " colors" << std::endl;
-	//std::cout << &vertices[0] << std::endl;
-	//std::cout << vertexArray << std::endl;
-	//std::cout << buffer << std::endl;
-
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
@@ -344,19 +293,6 @@ void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, 
 	glDisableVertexAttribArray(1);
 	glBindVertexArray(0);
 	glUseProgram(0);
-
-//	std::vector<float> testdata;
-//	testdata.push_back(0.0);
-//	testdata.push_back(0.0);
-//	testdata.push_back(0.0);
-//	testdata.push_back(-1.0);
-//	testdata.push_back(-1.0);
-//	testdata.push_back(-1.0);
-//	glBindVertexArray(testarray);
-//	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(testdata), &testdata[0]);
-//	glDrawArrays(GL_LINES, 0, testdata.size() / 3);
-//	glBindVertexArray(0);
-	
 }
 
 void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
@@ -388,25 +324,6 @@ void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buff
 
 void CMainApplication::drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals)
 {
-//	std::cout << "Dumping data to disk" << std::endl;
-//	std::string data;
-//	int counter = 0;
-//	for (auto& v : colors) {
-//		data += std::to_string(v) + "    ";
-//		if (++counter % 3 == 0) {
-//			data += "   ";
-//			counter = 0;
-//		}
-//		if (counter == 15) {
-//			data += "\n";
-//			counter = 0;
-//		}
-//	}
-//	
-//	std::ofstream f;
-//	f.open("color_dump_triangles" + std::to_string(fcounter++) + ".txt", std::ios_base::out);
-//	f.write(data.c_str(), data.length());
-
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 	Matrix4 matModel = getModdedMatrix(vertices);
 
@@ -818,6 +735,17 @@ bool CMainApplication::HandleInput()
 			{
 				m_bShowCubes = !m_bShowCubes;
 			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_PLUS || sdlEvent.key.keysym.sym == SDLK_EQUALS)
+			{
+				std::cout << "plus" << std::endl;
+				updatePlane(mPlane + 1);
+			}
+
+			if (sdlEvent.key.keysym.sym == SDLK_MINUS)
+			{
+				updatePlane(mPlane - 1);
+			}
 		}
 	}
 
@@ -891,12 +819,6 @@ void CMainApplication::RunMainLoop()
 	while (!bQuit)
 	{
 		bQuit = HandleInput();
-
-		for (auto& painter : mPainter) {
-			painter->doEvent(Painter::UpdateRequest);
-			if(painter->isViewportUpdated())
-				setViewport(painter->getGridSize());
-		}
 
 		RenderFrame();
 	}
@@ -1598,10 +1520,12 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	m_currentEye = nEye;
 
+	paint.lock();
 	for (auto& painter : mPainter)
 	{
 		painter->paint();
 	}
+	paint.unlock();
 
 
 
@@ -1784,6 +1708,58 @@ Matrix4 CMainApplication::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t&
 		matPose.m[0][3], matPose.m[1][3], matPose.m[2][3], 1.0f
 	);
 	return matrixObj;
+}
+
+
+extern CMainApplication* gMainApplication;
+void CMainApplication::updatePlane(int plane)
+{
+	std::cout << "Updating plane to " << plane << std::endl;
+	mPlane = clamp(plane, 0, mGridsize[mPlaneDim]);
+	paint.lock();
+	for (auto& painter : gMainApplication->mPainter) {
+		painter->doEvent(Painter::EventSetPlane, mPlane);
+	}
+	paint.unlock();
+}
+
+void updateQtGui(bool full, int frame, float time, const std::string& curPlugin) {
+	if (gMainApplication)
+	{
+		paint.lock();
+		for (auto& painter : gMainApplication->mPainter) {
+			if (full)
+				painter->doEvent(Painter::UpdateFull);
+			else
+				painter->doEvent(Painter::UpdateStep);
+
+			if (painter->isViewportUpdated())
+				gMainApplication->setViewport(painter->getGridSize());
+		}
+		paint.unlock();
+	}
+}
+
+void nextRealGridVR()
+{
+	std::cout << "Next real" << std::endl;
+}
+
+void nextVec3GridVR()
+{
+	std::cout << "Next v3" << std::endl;
+}
+void nextPartsVR()
+{
+	std::cout << "Next parts" << std::endl;
+}
+void nextPdataVR()
+{
+	std::cout << "Next pdata" << std::endl;
+}
+void nextMeshVR()
+{
+	std::cout << "Next mesh" << std::endl;
 }
 
 }

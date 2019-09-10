@@ -1,7 +1,9 @@
 #pragma once
 
 //========= Copyright Valve Corporation ============//
-#define VR
+
+#include "general.h"
+
 #ifdef VR
 
 #include <SDL.h>
@@ -160,6 +162,10 @@ public:
 	bool CreateAllShaders();
 
 	bool m_Initialized;
+	bool m_updateFull;
+	bool m_updateStep;
+
+	std::vector<VRPainter*> mPainter;
 
 private:
 	bool m_bDebugOpenGL;
@@ -201,7 +207,6 @@ private: // SDL bookkeeping
 	uint32_t m_nCompanionWindowHeight;
 
 	SDL_GLContext m_pContext;
-	std::vector<VRPainter*> mPainter;
 
 private: // OpenGL bookkeeping
 	int m_iTrackedControllerCount;
@@ -254,6 +259,9 @@ private: // OpenGL bookkeeping
 	Matrix4 m_mat4ProjectionRight;
 
 	std::set<unsigned int> m_CreatedArrays;
+
+	int m_plane;
+	void updatePlane(int plane);
 
 	struct VertexDataScene
 	{

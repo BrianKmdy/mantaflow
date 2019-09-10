@@ -19,6 +19,8 @@
 #include <cmath>
 #include <algorithm>
 
+#define VR
+
 namespace Manta {
 
 // ui data exchange

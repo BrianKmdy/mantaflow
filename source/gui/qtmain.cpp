@@ -15,6 +15,7 @@
 #include "mainwindow.h"
 #include "qtmain.h"
 #include "customctrl.h"
+#include "general.h"
 
 using namespace std;
 
@@ -120,6 +121,7 @@ void guiWaitFinish() {
 // Python adapter class
 
 // external callback functions 
+#ifndef VR
 void updateQtGui(bool full, int frame, float time, const string& curPlugin) {    
 	if (!gGuiThread || !gMainThread) return;
 	if (!gGuiThread->getWindow()->isVisible()) return;
@@ -141,5 +143,6 @@ void updateQtGui(bool full, int frame, float time, const string& curPlugin) {
 	}
 	gGuiThread->getWindow()->stepReset(full);
 }
+#endif
 
 } //namespace
