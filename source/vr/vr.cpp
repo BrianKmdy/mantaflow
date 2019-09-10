@@ -245,7 +245,7 @@ Matrix4 getModdedMatrix(std::vector<float>& vertices) {
 	Matrix4 matScale;
 	matScale.scale(3.0f, 3.0f, 3.0f);
 	Matrix4 matTransform;
-	matTransform.translate(0, 1.0f, 5.0f);
+	matTransform.translate(-1.0f, 1.0f, -4.0f);
 
 	return matTransform * matScale * matModelTranslate;
 }
@@ -413,7 +413,7 @@ void CMainApplication::drawNormalTriangles(unsigned int vertexArray, unsigned in
 	glUseProgram(m_unMeshProgramID);
 	glUniformMatrix4fv(m_nMeshViewLocation, 1, GL_FALSE, matView.get());
 	glUniformMatrix4fv(m_nMeshModelLocation, 1, GL_FALSE, matModel.get());
-	glUniform3f(m_nMeshLightLocation, 0.0f, 10.0f, 0);
+	glUniform3f(m_nMeshLightLocation, -3.0f, 5.0f, 0);
 	glBindVertexArray(vertexArray);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 
