@@ -121,10 +121,12 @@ public:
 	CMainApplication(int argc, char* argv[]);
 	virtual ~CMainApplication();
 
-	void setupBuffer(unsigned int* vertexArray, unsigned int* buffer);
-	void drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
-	void drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colrs);
-	void drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals);
+	virtual void genBuffers();
+	virtual void loadBuffers(unsigned int index);
+
+	virtual void drawLines();
+	virtual void drawTriangles();
+	virtual void drawNormalTriangles();
 
 	void setViewport(const Vec3i& gridsize);
 
@@ -161,11 +163,16 @@ public:
 	GLuint CompileGLShader(const char* pchShaderName, const char* pchVertexShader, const char* pchFragmentShader);
 	bool CreateAllShaders();
 
+	Matrix4 getModdedMatrix();
+
 	bool m_Initialized;
 	bool m_updateFull;
 	bool m_updateStep;
 
 	std::vector<VRPainter*> mPainter;
+
+	float m_rotY;
+	float m_scale;
 
 private:
 	bool m_bDebugOpenGL;

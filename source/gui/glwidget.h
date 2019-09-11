@@ -32,10 +32,11 @@ public:
 	QSize minimumSizeHint() const;
 	QSize sizeHint() const;
 
-	void setupBuffer(unsigned int* vertexArray, unsigned int* buffer);
-	void drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
-	void drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors);
-	void drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals);
+	virtual void genBuffers();
+	virtual void loadBuffers(unsigned int index);
+	virtual void drawLines();
+	virtual void drawTriangles();
+	virtual void drawNormalTriangles();
 
 	void mousePressEvent(QMouseEvent *e);
 	void mouseMoveEvent(QMouseEvent *e);

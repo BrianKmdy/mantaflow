@@ -168,6 +168,8 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_bShowCubes(true)
 	, m_CreatedArrays()
 	, m_plane(0)
+	, m_rotY(0.0f)
+	, m_scale(1.5f)
 {
 
 	for (int i = 1; i < argc; i++)
@@ -219,7 +221,7 @@ unsigned int fcounter = 0;
 Vec3 min;
 Vec3 max;
 
-Matrix4 getModdedMatrix(std::vector<float>& vertices) {
+void updateBounds(std::vector<float>& vertices) {
 	for (int i = 0; i < vertices.size(); ++i) {
 		if (i % 3 == 0) {
 			if (vertices[i] < min.x)
@@ -242,116 +244,132 @@ Matrix4 getModdedMatrix(std::vector<float>& vertices) {
 				max.z = vertices[i];
 		}
 	}
+}
 
+Matrix4 CMainApplication::getModdedMatrix() {
 	Matrix4 matModelTranslate;
 	matModelTranslate.translate(-((max.x - min.x) / 2), -((max.y - min.y) / 2), -((max.z - min.z) / 2));
 
 	Matrix4 matScale;
-	matScale.scale(1.5f, 1.5f, 1.5f);
+	matScale.scale(m_scale, m_scale, m_scale);
+	Matrix4 matRotate;
+	matRotate.rotateY(m_rotY);
 	Matrix4 matTransform;
 	matTransform.translate(0.0f, 1.0f, -1.5f);
 
-	return matTransform * matScale * matModelTranslate;
+	return matTransform * matRotate * matScale * matModelTranslate;
 }
 
-void CMainApplication::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
+void CMainApplication::genBuffers()
 {
-	std::cout << vertexArray << std::endl;
-	std::cout << buffer << std::endl;
-	std::cout << *vertexArray << std::endl;
-	std::cout << *buffer << std::endl;
-	glGenVertexArrays(1, vertexArray);
-	std::cout << *vertexArray << std::endl;
-	glBindVertexArray(*vertexArray);
-	glGenBuffers(1, buffer);
-	std::cout << *buffer << std::endl;
-	glBindBuffer(GL_ARRAY_BUFFER , *buffer);
+	glGenVertexArrays(NumShapes, m_vertexArrays);
+	glGenBuffers(NumShapes, m_buffers);
+
+	// XXX/bmoody Need to check for success
 }
 
-#define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
-void CMainApplication::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
+void CMainApplication::loadBuffers(unsigned int index)
+{
+	// XXX/bmoody Can probably be more efficient by just calling buffersubdata if the size hasn't changed
+
+	// XXX/bmoody Remove this
+	updateBounds(m_vertices[index][ShapeLines]);
+
+	// Lines
+	glBindVertexArray(m_vertexArrays[ShapeLines]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapeLines]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapeLines].size() + m_colors[index][ShapeLines].size()), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapeLines].size() * sizeof(float), &m_vertices[index][ShapeLines][0]);
+	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapeLines].size() * sizeof(float), m_colors[index][ShapeLines].size() * sizeof(float), &m_colors[index][ShapeLines][0]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)(m_vertices[index][ShapeLines].size() * sizeof(float)));
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+
+	// Flat triangles
+	glBindVertexArray(m_vertexArrays[ShapeFlatTriangles]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapeFlatTriangles]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapeFlatTriangles].size() + m_colors[index][ShapeFlatTriangles].size()), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapeFlatTriangles].size() * sizeof(float), &m_vertices[index][ShapeFlatTriangles][0]);
+	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapeFlatTriangles].size() * sizeof(float), m_colors[index][ShapeFlatTriangles].size() * sizeof(float), &m_colors[index][ShapeFlatTriangles][0]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)(m_vertices[index][ShapeFlatTriangles].size() * sizeof(float)));
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+
+	// Shaded triangles
+	glBindVertexArray(m_vertexArrays[ShapeShadedTriangles]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapeShadedTriangles]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapeShadedTriangles].size() + m_colors[index][ShapeShadedTriangles].size() + m_normals[index][ShapeShadedTriangles].size()), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapeShadedTriangles].size() * sizeof(float), &m_vertices[index][ShapeShadedTriangles][0]);
+	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapeShadedTriangles].size() * sizeof(float), m_colors[index][ShapeShadedTriangles].size() * sizeof(float), &m_colors[index][ShapeShadedTriangles][0]);
+	glBufferSubData(GL_ARRAY_BUFFER, (m_vertices[index][ShapeShadedTriangles].size() + m_colors[index][ShapeShadedTriangles].size()) * sizeof(float), m_normals[index][ShapeShadedTriangles].size() * sizeof(float), &m_normals[index][ShapeShadedTriangles][0]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, false, 4 * sizeof(float), (GLvoid*)(m_vertices[index][ShapeShadedTriangles].size() * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)((m_vertices[index][ShapeShadedTriangles].size() + m_colors[index][ShapeShadedTriangles].size()) * sizeof(float)));
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+
+	for (unsigned int i = 0; i < NumShapes; ++i) {
+		m_vertexCount[i] = m_vertices[index][i].size() / 3;
+	}
+}
+
+void CMainApplication::drawLines()
 {
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix(vertices)).get());
-	glBindVertexArray(vertexArray);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glBindVertexArray(m_vertexArrays[ShapeLines]);
 
-	// XXX/bmoody Can probably just call this on setup if we have vertex count
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (vertices.size() + colors.size()), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), colors.size() * sizeof(float), &colors[0]);
+	glDrawArrays(GL_LINES, 0, m_vertexCount[ShapeLines]);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) 0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) (vertices.size() * sizeof(float)));
-
-	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
 
-void CMainApplication::drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
+void CMainApplication::drawTriangles()
 {
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
 	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix(vertices)).get());
-	glBindVertexArray(vertexArray);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glBindVertexArray(m_vertexArrays[ShapeFlatTriangles]);
 
-	// XXX/bmoody Can probably just call this on setup if we have vertex count
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (vertices.size() + colors.size()), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), colors.size() * sizeof(float), &colors[0]);
+	glDrawArrays(GL_TRIANGLES, 0, m_vertexCount[ShapeFlatTriangles]);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) 0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) (vertices.size() * sizeof(float)));
-
-	// glBindVertexArray(vertexArray);
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
 
-void CMainApplication::drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals)
+void CMainApplication::drawNormalTriangles()
 {
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
-	Matrix4 matModel = getModdedMatrix(vertices);
+	Matrix4 matModel = getModdedMatrix();
 
 	glUseProgram(m_unMeshProgramID);
 	glUniformMatrix4fv(m_nMeshViewLocation, 1, GL_FALSE, matView.get());
 	glUniformMatrix4fv(m_nMeshModelLocation, 1, GL_FALSE, matModel.get());
 	glUniform3f(m_nMeshLightLocation, -3.0f, 5.0f, 0);
-	glBindVertexArray(vertexArray);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBindVertexArray(m_vertexArrays[ShapeShadedTriangles]);
 
-	// XXX/bmoody Can probably just call this on setup if we have vertex count
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (vertices.size() + colors.size() + normals.size()), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(float), &vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), colors.size() * sizeof(float), &colors[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, (vertices.size() + colors.size()) * sizeof(float), normals.size() * sizeof(float), &normals[0]);
+	glDrawArrays(GL_TRIANGLES, 0, m_vertexCount[ShapeShadedTriangles]);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) 0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, false, 4 * sizeof(float), (GLvoid*) (vertices.size() * sizeof(float)));
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*) ((vertices.size() + colors.size()) * sizeof(float)));
-
-	// glBindVertexArray(vertexArray);
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
@@ -535,6 +553,7 @@ bool CMainApplication::BInit()
 		}
 	}
 
+	genBuffers();
 	mInitialized = true;
 
 	return true;
@@ -640,6 +659,7 @@ bool CMainApplication::BInitCompositor()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
+// XXX/bmoody Add more cleanup here
 void CMainApplication::Shutdown()
 {
 	if (m_pHMD)
@@ -726,25 +746,39 @@ bool CMainApplication::HandleInput()
 		}
 		else if (sdlEvent.type == SDL_KEYDOWN)
 		{
-			if (sdlEvent.key.keysym.sym == SDLK_ESCAPE
-				|| sdlEvent.key.keysym.sym == SDLK_q)
-			{
+			switch (sdlEvent.key.keysym.sym) {
+			case SDLK_ESCAPE:
+			case SDLK_q:
 				bRet = true;
-			}
-			if (sdlEvent.key.keysym.sym == SDLK_c)
-			{
-				m_bShowCubes = !m_bShowCubes;
-			}
-
-			if (sdlEvent.key.keysym.sym == SDLK_PLUS || sdlEvent.key.keysym.sym == SDLK_EQUALS)
-			{
-				std::cout << "plus" << std::endl;
+				break;
+			case SDLK_PLUS:
+			case SDLK_EQUALS:
+			case SDLK_KP_PLUS:
 				updatePlane(mPlane + 1);
-			}
-
-			if (sdlEvent.key.keysym.sym == SDLK_MINUS)
-			{
+				break;
+			case SDLK_MINUS:
+			case SDLK_KP_MINUS:
 				updatePlane(mPlane - 1);
+				break;
+			case SDLK_KP_8:
+				mPlaneDim = (mPlaneDim + 1) % 3;
+				for (auto& painter : mPainter) {
+					painter->doEvent(Painter::EventSetDim, mPlaneDim);
+					painter->doEvent(Painter::EventSetMax, mGridsize[mPlaneDim]);
+				}
+				break;
+			case SDLK_RIGHT:
+				m_rotY += 2.5f;
+				break;
+			case SDLK_LEFT:
+				m_rotY -= 2.5f;
+				break;
+			case SDLK_UP:
+				m_scale += 0.05f;
+				break;
+			case SDLK_DOWN:
+				m_scale -= 0.05f;
+				break;
 			}
 		}
 	}
@@ -1296,34 +1330,6 @@ void CMainApplication::SetupScene()
 		mat = mat * Matrix4().translate(0, -((float)m_iSceneVolumeHeight) * m_fScaleSpacing, m_fScaleSpacing);
 	}
 	m_uiVertcount = vertdataarray.size() / 5;
-
-	glGenVertexArrays(1, &m_unSceneVAO);
-	glBindVertexArray(m_unSceneVAO);
-
-	glGenBuffers(1, &m_glSceneVertBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glSceneVertBuffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertdataarray.size(), &vertdataarray[0], GL_STATIC_DRAW);
-
-	GLsizei stride = sizeof(VertexDataScene);
-	uintptr_t offset = 0;
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (const void*)offset);
-
-	offset += sizeof(Vector3);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (const void*)offset);
-
-	glBindVertexArray(0);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-
-	// Add the test buffers
-	// XXX/bmoody Remove this
-	glGenVertexArrays(1, &m_unTestVAO);
-	glGenBuffers(1, &m_glTestBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, m_glTestBuffer);
-	glBindVertexArray(0);
 }
 
 
@@ -1520,14 +1526,10 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 
 	m_currentEye = nEye;
 
-	paint.lock();
-	for (auto& painter : mPainter)
-	{
-		painter->paint();
-	}
-	paint.unlock();
+	if (mBufferFilled)
+		swapBuffers();
 
-
+	draw();
 
 //	auto lines = get_lines();
 //	m_numLines = lines.size();
@@ -1710,23 +1712,18 @@ Matrix4 CMainApplication::ConvertSteamVRMatrixToMatrix4(const vr::HmdMatrix34_t&
 	return matrixObj;
 }
 
-
 extern CMainApplication* gMainApplication;
 void CMainApplication::updatePlane(int plane)
 {
-	std::cout << "Updating plane to " << plane << std::endl;
 	mPlane = clamp(plane, 0, mGridsize[mPlaneDim]);
-	paint.lock();
 	for (auto& painter : gMainApplication->mPainter) {
 		painter->doEvent(Painter::EventSetPlane, mPlane);
 	}
-	paint.unlock();
 }
 
 void updateQtGui(bool full, int frame, float time, const std::string& curPlugin) {
-	if (gMainApplication)
+	if (gMainApplication && gMainApplication->mInitialized)
 	{
-		paint.lock();
 		for (auto& painter : gMainApplication->mPainter) {
 			if (full)
 				painter->doEvent(Painter::UpdateFull);
@@ -1736,7 +1733,15 @@ void updateQtGui(bool full, int frame, float time, const std::string& curPlugin)
 			if (painter->isViewportUpdated())
 				gMainApplication->setViewport(painter->getGridSize());
 		}
-		paint.unlock();
+		
+		if (!gMainApplication->mBufferFilled) {
+			for (auto& painter : gMainApplication->mPainter)
+				painter->paint();
+
+			std::lock_guard<std::mutex> lock(gMainApplication->m_swapMutex);
+			gMainApplication->mBufferFilled = true;
+		}
+		
 	}
 }
 

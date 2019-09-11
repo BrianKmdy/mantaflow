@@ -58,16 +58,6 @@ public:
 		return updated;
 	}
 
-	unsigned int setupBuffer(int index) {
-		if (!mVertexArray[index] || !mBuffer[index])
-		{
-			if (mGLRenderer && mGLRenderer->mInitialized)
-				mGLRenderer->setupBuffer(&mVertexArray[index], &mBuffer[index]);
-			std::cout << "fetched " << mVertexArray[index] << " " << mBuffer[index] << std::endl;
-		}
-		return mBuffer[index];
-	}
-	
 	virtual void paint() = 0;
 	virtual void doEvent(int e, int param=0) = 0;
 
@@ -94,58 +84,6 @@ protected:
 	virtual std::string getID() = 0;
 	virtual void update() = 0;
 	virtual void processKeyEvent(PainterEvent e, int param) = 0;
-
-	void addVec(std::vector<float>& vertices, std::vector<float>& colors, Vec3 vertex, Vec3 color, float mod = 1.0) {
-		vertices.push_back(vertex.x * mod);
-		vertices.push_back(vertex.y * mod);
-		vertices.push_back(vertex.z * mod);
-		colors.push_back(color.x);
-		colors.push_back(color.y);
-		colors.push_back(color.z);
-	}
-
-	void addNormalVec(std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals, Vec3 vertex, Vec4 color, Vec3 normal, float mod = 1.0) {
-		vertices.push_back(vertex.x * mod);
-		vertices.push_back(vertex.y * mod);
-		vertices.push_back(vertex.z * mod);
-		colors.push_back(color.x);
-		colors.push_back(color.y);
-		colors.push_back(color.z);
-		colors.push_back(color.t);
-		normals.push_back(normal.x);
-		normals.push_back(normal.y);
-		normals.push_back(normal.z);
-	}
-
-	void addQuad(std::vector<float>& vertices, std::vector<float>& colors, Vec3 boxVertices[4], Vec3 color, float mod = 1.0)
-	{
-		// Iterate over the index values needed to make this quad
-		// Triangle 1: 0, 1, 2
-		// Triangle 2: 0, 2, 3
-		for (int i : {0, 1, 2, 0, 2, 3})
-		{
-			vertices.push_back(boxVertices[i].x * mod);
-			vertices.push_back(boxVertices[i].y * mod);
-			vertices.push_back(boxVertices[i].z * mod);
-			colors.push_back(color.x);
-			colors.push_back(color.y);
-			colors.push_back(color.z);
-		}
-	}
-
-	void addBox(std::vector<float>& vertices, std::vector<float>& colors, Vec3& p0, const Vec3& p1, Vec3 color, const float mod = 1.0) {
-		const int box[24] = { 0,1,0,2,0,4,7,6,7,5,7,3,1,3,1,5,2,3,2,6,4,5,4,6 };
-		for (int i = 0; i < 24; i++) {
-			const int b = box[i];
-			Vec3 v = Vec3((b & 1) ? p1.x : p0.x, (b & 2) ? p1.y : p0.y, (b & 4) ? p1.z : p0.z);
-			vertices.push_back(v.x * mod);
-			vertices.push_back(v.y * mod);
-			vertices.push_back(v.z * mod);
-			colors.push_back(color.x);
-			colors.push_back(color.y);
-			colors.push_back(color.z);
-		}
-	}
 	
 	bool     mRequestUpdate;
 	PbClass* mObject;

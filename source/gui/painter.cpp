@@ -31,7 +31,6 @@ void LockedObjPainter::doEvent(int e, int param) {
 		
 	// filter update events
 	if (e == UpdateFull) {
-		std::cout << "udpate full" << std::endl;
 		// always update
 		if (mObject) {
 			mObject->lock();
@@ -41,7 +40,6 @@ void LockedObjPainter::doEvent(int e, int param) {
 		}
 	} else if (e == UpdateRequest) {
 		// update if resource is available, otherwise wait until next step
-		std::cout << "update request" << std::endl;
 		mRequestUpdate = true;        
 		if (mObject) {
 			if (mObject->tryLock()) {
@@ -51,7 +49,6 @@ void LockedObjPainter::doEvent(int e, int param) {
 			}
 		}
 	} else if (e == UpdateStep) {
-		std::cout << "update step" << std::endl;
 		// update if requested only
 		if (mRequestUpdate) {
 			if (mObject) {
@@ -68,7 +65,6 @@ void LockedObjPainter::doEvent(int e, int param) {
 }
 
 void LockedObjPainter::nextObject() {
-	std::cout << "next object" << std::endl;
 	if (PbClass::getNumInstances() == 0) return;
 	
 	int oldIndex = mObjIndex;
@@ -116,7 +112,6 @@ void GridPainter<T>::update() {
 			mGridSize = src->getSize();
 			mViewPortUpdated = true;
 		}
-		std::cout << "No local grid" << std::endl;
 	}
 	// reallocate if dimensions changed (or solver)
 	if ((mLocalGrid->getSize() != src->getSize()) || (mLocalGrid->getParent() != src->getParent())) {
@@ -127,9 +122,7 @@ void GridPainter<T>::update() {
 		{
 			mGridSize = src->getSize();
 			mViewPortUpdated = true;
-			std::cout << "type int" << std::endl;
 		}
-		std::cout << "change size or parent" << std::endl;
 	}
 
 	mLocalGrid->copyFrom(*src, true); // copy grid data and type marker
@@ -229,7 +222,6 @@ void GridPainter<int>::processSpecificKeyEvent(PainterEvent e, int param) {
 template<>
 void GridPainter<Real>::processSpecificKeyEvent(PainterEvent e, int param) {
 	if (e == EventNextReal) {
-		std::cout << "next real" << std::endl;
 		nextObject();
 		mHideLocal = (getDispMode()==VecDispOff); 
 	} else if (e == EventScaleRealDown && mObject) {
@@ -249,7 +241,6 @@ void GridPainter<Real>::processSpecificKeyEvent(PainterEvent e, int param) {
 template<>
 void GridPainter<Vec3>::processSpecificKeyEvent(PainterEvent e, int param) {
 	if (e == EventNextVec) {
-		std::cout << "next vec" << std::endl;
 		nextObject();
 		mHideLocal = (getDispMode()==VecDispOff); 
 	} else if (e == EventScaleVecDown && mObject) {
@@ -399,9 +390,6 @@ template<> void GridPainter<int>::paint() {
 	if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
-	if (!setupBuffer(0) || !setupBuffer(1))
-		return;
-
 	float dx = mLocalGrid->getDx();
 	Vec3 box[4];
 	Vec3 color = Vec3(0.5,0,0);
@@ -411,9 +399,6 @@ template<> void GridPainter<int>::paint() {
 	bool drawLines = mLocalGrid->getSize().max() <= 80;
 
 	if (drawLines) {
-		std::vector<float> vertices;
-		std::vector<float> colors;
-
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) {
 
 			int flag = 0;
@@ -435,21 +420,12 @@ template<> void GridPainter<int>::paint() {
 
 			getCellCoordinates(p, box, mDim, true); 
 			for (int n=1;n<=8;n++)
-				addVec(vertices, colors, box[(n / 2) % 4], color, dx);
+				mGLRenderer->addVec(box[(n / 2) % 4], color, dx);
 		}
-
-		mGLRenderer->drawLines(mVertexArray[0], mBuffer[0], vertices, colors);
 	}
 	if (rbox) {
-		std::vector<float> vertices;
-		std::vector<float> colors;
-
 		Vec3 p0(0.0), p1(toVec3(mLocalGrid->getSize())),p(p0);
-		addBox(vertices, colors, p0, p1, Vec3(0.5, 0, 0), dx);
-
-		glDepthFunc(GL_LESS);
-		mGLRenderer->drawLines(mVertexArray[1], mBuffer[1], vertices, colors);
-		glDepthFunc(GL_ALWAYS);
+		mGLRenderer->addBox(p0, p1, Vec3(0.5, 0, 0), dx);
 	}
 }
 
@@ -461,21 +437,14 @@ template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
 		return;
 
-	if (!setupBuffer(0) || !setupBuffer(1))
-		return;
-	
 	const int dm     = getDispMode();
 	const Real scale = getScale();
 	const float dx   = mLocalGrid->getDx();
 	Vec3 box[4];
-
 	
 	// "new" drawing style 
 	// ignore flags, its a bit dangerous to skip outside info
 	if( (dm==RealDispStd) || (dm==RealDispLevelset) ) {
-		std::vector<float> vertices;
-		std::vector<float> colors;
-
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
 		{ 
 			Vec3 color;
@@ -495,15 +464,10 @@ template<> void GridPainter<Real>::paint() {
 
 			getCellCoordinates(p, box, mDim);
 
-			addQuad(vertices, colors, box, color, dx);
+			mGLRenderer->addQuad(box, color, dx);
 		}
-
-		mGLRenderer->drawTriangles(mVertexArray[0], mBuffer[0], vertices, colors);
 	}
 	if( (dm==RealDispShadeVol) || (dm==RealDispShadeSurf) ) {
-		std::vector<float> vertices;
-		std::vector<float> colors;
-
 		SimpleImage img;
 
 		// note - slightly wasteful, projects all 3 axes!
@@ -522,10 +486,8 @@ template<> void GridPainter<Real>::paint() {
 
 			getCellCoordinates(p, box, mDim);
 
-			addQuad(vertices, colors, box, col, dx);
+			mGLRenderer->addQuad(box, col, dx);
 		}
-
-		mGLRenderer->drawTriangles(mVertexArray[1], mBuffer[1], vertices, colors);
 	}
 }
 
@@ -534,16 +496,10 @@ template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
-	if (!setupBuffer(0))
-		return;
-
 	const int dm     = getDispMode();
 	const Real scale = getScale();
 	const float dx   = mLocalGrid->getDx();
 	const bool mac   = mLocalGrid->getType() & GridBase::TypeMAC;
-
-	std::vector<float> vertices;
-	std::vector<float> colors;
 
 	if( (dm==VecDispCentered) || (dm==VecDispStaggered) ) {
 
@@ -559,8 +515,8 @@ template<> void GridPainter<Vec3>::paint() {
 					if (p.z < mLocalGrid->getSizeZ()-1) 
 						vel.z = 0.5 * (vel.z + scale * mLocalGrid->get(p.x,p.y,p.z+1).z);
 				}
-				addVec(vertices, colors, pos, Vec3(0.2, 0.45, 0.8), dx);
-				addVec(vertices, colors, pos + vel * 1.2, Vec3(0.0, 1.0, 0.0), dx);
+				mGLRenderer->addVec(pos, Vec3(0.2, 0.45, 0.8), dx);
+				mGLRenderer->addVec(pos + vel * 1.2, Vec3(0.0, 1.0, 0.0), dx);
 			} else if (dm==VecDispStaggered) {
 				for (int d=0; d<3; d++) {
 					if (fabs(vel[d]) < 1e-2) continue;
@@ -570,14 +526,12 @@ template<> void GridPainter<Vec3>::paint() {
 					Vec3 color(0.0);
 					color[d] = 1;
 
-					addVec(vertices, colors, p1, color, dx);
+					mGLRenderer->addVec(p1, color, dx);
 					p1[d] += vel[d];
-					addVec(vertices, colors, p1, Vec3(1.0, 1.0, 0.0), dx);
+					mGLRenderer->addVec(p1, Vec3(1.0, 1.0, 0.0), dx);
 				}
 			}
 		}
-
-		mGLRenderer->drawLines(mVertexArray[0], mBuffer[0], vertices, colors);
 	
 	} else if (dm==VecDispUv) {
 		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!

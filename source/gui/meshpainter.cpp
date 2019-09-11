@@ -148,9 +148,6 @@ static inline void glNormal(const Vec3& v) {
 void MeshPainter::paint() {
 	if (!mObject || mHide || !mLocalMesh) return;
 
-	if (!setupBuffer(0) || !setupBuffer(1) || !setupBuffer(2))
-		return;
-
 	Real dx = mLocalMesh->getParent()->getDx();
 	
 	bool triColor = (mMode == ModeFlatShade) && (mLocalMesh->getType() == Mesh::TypeVortexSheet) && (mVorticityMode!=VModeNone);
@@ -179,15 +176,11 @@ void MeshPainter::paint() {
 		}        
 		glEnable(GL_CULL_FACE);
 		glPolygonOffset(1.0, 0.5);
-
-		std::vector<float> vertices;
-		std::vector<float> colors;
-		std::vector<float> normals;
 				
 		for(int tri=0; tri<mBackground->numTris(); tri++) {
 			Vec3 normal = mBackground->getFaceNormal(tri);
 			for (int c=0; c<3; c++) {
-				addNormalVec(vertices, colors, normals, mBackground->getNode(tri, c), color4, normal, dx);   
+				mGLRenderer->addNormalVec(mBackground->getNode(tri, c), color4, normal, dx);
 			}
 		}
 
@@ -213,11 +206,7 @@ void MeshPainter::paint() {
 	{
 		glEnable(GL_CULL_FACE);
 		glPolygonOffset(1.0, 0.5);
-		
-		std::vector<float> vertices;
-		std::vector<float> colors;
-		std::vector<float> normals;
-		
+
 		const int numTris = (int)mLocalMesh->numTris();
 		for(int tri=0; tri<numTris; tri++) {
 			if (!nodeColor && triColor) {
@@ -245,11 +234,9 @@ void MeshPainter::paint() {
 					tc = nmod(tc, Vec3(1,1,1));
 					color4 = Vec4(tc.x, tc.y, tc.z, 1.0);
 				}
-				addNormalVec(vertices, colors, normals, mLocalMesh->getNode(tri, c), color4, mLocalMesh->getFaceNormal(tri), dx);
+				mGLRenderer->addNormalVec(mLocalMesh->getNode(tri, c), color4, mLocalMesh->getFaceNormal(tri), dx);
 			}
 		}
-
-		mGLRenderer->drawNormalTriangles(mVertexArray[0], mBuffer[0], vertices, colors, normals);
 
 		glPolygonOffset(1., 1.);
 		glDisable(GL_CULL_FACE);        
@@ -267,15 +254,12 @@ void MeshPainter::paint() {
 	// draw mesh lines
 	Vec3 color3;
 	if(mMode == ModeLines) {
-		std::vector<float> vertices;
-		std::vector<float> colors;
-
 		color3 = Vec3(1.0, 0.9, 0.9);
 		glLineWidth(1.0);
 		const int numTris = (int)mLocalMesh->numTris();
 		for(int tri=0; tri<numTris; tri++)
 			for (int j=5; j<5+6; j++)
-				addVec(vertices, colors, mLocalMesh->getNode(tri, (j / 2) % 3), color3, dx);
+				mGLRenderer->addVec(mLocalMesh->getNode(tri, (j / 2) % 3), color3, dx);
 		
 		// XXX/bmoody Draw lines
 	}
@@ -284,9 +268,6 @@ void MeshPainter::paint() {
 	if(mMode == ModePoints) {
 		static const Vec3 colorSpecial (0.3, 0.5, 0.2);
 		//static const Vec3 colortable[] = { Vec3(0.5), Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1) };
-
-		std::vector<float> vertices;
-		std::vector<float> colors;
 	
 		glPointSize(2.0);
 		const int numNodes = (int)mLocalMesh->numNodes();
@@ -298,7 +279,7 @@ void MeshPainter::paint() {
 				color3 = Vec3(1,0,0);
 			//int flags = mLocalMesh->flags(i);
 			
-			addVec(vertices, colors, mLocalMesh->nodes(i).pos, color3, dx);
+			mGLRenderer->addVec(mLocalMesh->nodes(i).pos, color3, dx);
 		}
 		
 		// XXX/bmoody Draw points

@@ -71,61 +71,67 @@ void GLWidget::initializeGL()
 	glClearDepth(1.0);    
 }
 
-void GLWidget::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
-{
-	glGenBuffers(1, buffer);
-	*vertexArray = 1;
-}
+void GLWidget::genBuffers(){}
+void GLWidget::loadBuffers(unsigned int index){}
+void GLWidget::drawLines(){}
+void GLWidget::drawTriangles(){}
+void GLWidget::drawNormalTriangles(){}
 
-
-#define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
-void GLWidget::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
-{
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-
-	int vertexbufsize = vertices.size() * sizeof(float);
-	int colorbufsize = colors.size() * sizeof(float);
-	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
-
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
-	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
-
-	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
-	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
-}
-
-void GLWidget::drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
-{
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-
-	int vertexbufsize = vertices.size() * sizeof(float);
-	int colorbufsize = colors.size() * sizeof(float);
-	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
-
-	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
-	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
-
-	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
-}
-
-void GLWidget::drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals)
-{
-	// Do nothing
-}
-
+// void GLWidget::setupBuffer(unsigned int* vertexArray, unsigned int* buffer)
+// {
+// 	glGenBuffers(1, buffer);
+// 	*vertexArray = 1;
+// }
+// 
+// 
+// #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes)) 
+// void GLWidget::drawLines(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
+// {
+// 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+// 
+// 	int vertexbufsize = vertices.size() * sizeof(float);
+// 	int colorbufsize = colors.size() * sizeof(float);
+// 	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+// 
+// 	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
+// 	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+// 
+// 	glEnableClientState(GL_VERTEX_ARRAY);
+// 	glEnableClientState(GL_COLOR_ARRAY);
+// 
+// 	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+// 	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
+// 
+// 	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+// 	glDrawArrays(GL_LINES, 0, vertices.size() / 3);
+// }
+// 
+// void GLWidget::drawTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors)
+// {
+// 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+// 
+// 	int vertexbufsize = vertices.size() * sizeof(float);
+// 	int colorbufsize = colors.size() * sizeof(float);
+// 	glBufferData(GL_ARRAY_BUFFER, vertexbufsize + colorbufsize, NULL, GL_STATIC_DRAW); // data=NULL : initialize, but don't copy
+// 
+// 	glBufferSubData(GL_ARRAY_BUFFER, 0, vertexbufsize, &vertices[0]);
+// 	glBufferSubData(GL_ARRAY_BUFFER, vertexbufsize, colorbufsize, &colors[0]);
+// 
+// 	glEnableClientState(GL_VERTEX_ARRAY);
+// 	glEnableClientState(GL_COLOR_ARRAY);
+// 
+// 	glVertexPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(0));
+// 	glColorPointer(3, GL_FLOAT, 0, BUFFER_OFFSET(vertexbufsize));
+// 
+// 	// glDrawElements(GL_LINES, vertices.size(), GL_UNSIGNED_SHORT, BUFFER_OFFSET(0));
+// 	glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
+// }
+// 
+// void GLWidget::drawNormalTriangles(unsigned int vertexArray, unsigned int buffer, std::vector<float>& vertices, std::vector<float>& colors, std::vector<float>& normals)
+// {
+// 	// Do nothing
+// }
+// 
 void GLWidget::paintGL()
 {
 	if (mGridsize.max() == 0) return;
