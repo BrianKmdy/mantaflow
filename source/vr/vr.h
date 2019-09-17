@@ -124,6 +124,7 @@ public:
 	virtual void genBuffers();
 	virtual void loadBuffers(unsigned int index);
 
+	virtual void drawPoints();
 	virtual void drawLines();
 	virtual void drawTriangles();
 	virtual void drawNormalTriangles();

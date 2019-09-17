@@ -114,6 +114,7 @@ void ParticlePainter::paint() {
 	mHavePdata = false;
 	mMaxVal = 0.;
 	
+	// XXX/bmoody Review how to handle this with new rendering system
 	glDisable(GL_BLEND);
 	glDisable(GL_DEPTH_TEST); // disable depth test for particles, clashes with display plane for regular ones
 	glDisable(GL_LIGHTING);
@@ -121,16 +122,11 @@ void ParticlePainter::paint() {
 	// draw points
 	if(mLocal->getType() == ParticleBase::VORTEX) {
 		VortexParticleSystem* vp = (VortexParticleSystem*) mLocal;
-		glColor3f(1,1,0);
 		for(int i=0; i<vp->size(); i++) {
 			if (vp->isActive(i)) {
 				Vec3 pos = (*vp)[i].pos;
-			
-				glPointSize((*vp)[i].sigma);
 
-				glBegin(GL_POINTS);
-				glVertex(pos, dx);
-				glEnd();
+				mGLRenderer->addPoint(pos, Vec3(1, 1, 0), (*vp)[i].sigma, dx);
 			}
 		}        
 	} else if (mLocal->getType() == ParticleBase::FILAMENT) {
@@ -152,25 +148,21 @@ void ParticlePainter::paint() {
 		}   */
 	} else if(mLocal->getType() == ParticleBase::TURBULENCE) {
 		TurbulenceParticleSystem* vp = (TurbulenceParticleSystem*) mLocal;
-		glPointSize(2.5);
-		glColor3f(0,1,0);
-		glBegin(GL_POINTS);
 		for(int i=0; i<(int)vp->size(); i++) {
 			Vec3 pos = (*vp)[i].pos;
-			glColor((*vp)[i].color);
-			glVertex(pos, dx);
+
+			mGLRenderer->addPoint(pos, (*vp)[i].color, 2.5, dx);
 			
 		}   
-		glEnd();
 		
 	} else if(mLocal->getType() == ParticleBase::PARTICLE) {
 		paintBasicSys();
 	}
 
-	glPointSize(1.0);
 	glEnable(GL_DEPTH_TEST); 
 }
 
+// XXX/bmoody Paint here
 void ParticlePainter::paintBasicSys() {
 	BasicParticleSystem* bp = (BasicParticleSystem*) mLocal;
 	//int dim = mGridRef->getDim();

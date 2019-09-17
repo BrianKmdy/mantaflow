@@ -275,6 +275,21 @@ void CMainApplication::loadBuffers(unsigned int index)
 	// XXX/bmoody Remove this
 	updateBounds(m_vertices[index][ShapeLines]);
 
+	// Points
+	glBindVertexArray(m_vertexArrays[ShapePoints]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapePoints]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapePoints].size() + m_colors[index][ShapePoints].size()), 0, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapePoints].size() * sizeof(float), &m_vertices[index][ShapePoints][0]);
+	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapePoints].size() * sizeof(float), m_colors[index][ShapePoints].size() * sizeof(float), &m_colors[index][ShapePoints][0]);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)(m_vertices[index][ShapePoints].size() * sizeof(float)));
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+
 	// Lines
 	glBindVertexArray(m_vertexArrays[ShapeLines]);
 	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapeLines]);
@@ -327,6 +342,22 @@ void CMainApplication::loadBuffers(unsigned int index)
 	for (unsigned int i = 0; i < NumShapes; ++i) {
 		m_vertexCount[i] = m_vertices[index][i].size() / 3;
 	}
+}
+
+void CMainApplication::drawPoints()
+{
+	glPointSize(2.5);
+
+	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
+
+	glUseProgram(m_unTestProgramID);
+	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glBindVertexArray(m_vertexArrays[ShapePoints]);
+
+	glDrawArrays(GL_POINTS, 0, m_vertexCount[ShapePoints]);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 void CMainApplication::drawLines()
@@ -1716,8 +1747,16 @@ extern CMainApplication* gMainApplication;
 void CMainApplication::updatePlane(int plane)
 {
 	mPlane = clamp(plane, 0, mGridsize[mPlaneDim]);
-	for (auto& painter : gMainApplication->mPainter) {
+	for (auto& painter : mPainter) {
 		painter->doEvent(Painter::EventSetPlane, mPlane);
+	}
+
+	if (!mBufferFilled) {
+		for (auto& painter : mPainter)
+			painter->paint();
+
+		std::lock_guard<std::mutex> lock(m_swapMutex);
+		mBufferFilled = true;
 	}
 }
 
@@ -1741,30 +1780,7 @@ void updateQtGui(bool full, int frame, float time, const std::string& curPlugin)
 			std::lock_guard<std::mutex> lock(gMainApplication->m_swapMutex);
 			gMainApplication->mBufferFilled = true;
 		}
-		
 	}
-}
-
-void nextRealGridVR()
-{
-	std::cout << "Next real" << std::endl;
-}
-
-void nextVec3GridVR()
-{
-	std::cout << "Next v3" << std::endl;
-}
-void nextPartsVR()
-{
-	std::cout << "Next parts" << std::endl;
-}
-void nextPdataVR()
-{
-	std::cout << "Next pdata" << std::endl;
-}
-void nextMeshVR()
-{
-	std::cout << "Next mesh" << std::endl;
 }
 
 }

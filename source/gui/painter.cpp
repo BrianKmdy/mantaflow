@@ -536,7 +536,6 @@ template<> void GridPainter<Vec3>::paint() {
 	} else if (dm==VecDispUv) {
 		// draw as "uv" coordinates (ie rgb), note - this will completely hide the real grid display!
 		Vec3 box[4];
-		// glBegin(GL_QUADS); 
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
 		{ 
 			Vec3 v = mLocalGrid->get(p) * scale; 
@@ -550,12 +549,11 @@ template<> void GridPainter<Vec3>::paint() {
 				v[c] = fmod( (Real)v[c], (Real)1.);
 			} 
 			//v *= mLocalGrid->get(0)[0]; // debug, show uv grid weight as brightness of values
-			// glColor3f(v[0],v[1],v[2]); 
-			// getCellCoordinates(p, box, mDim);
-			// for (int n=0;n<4;n++) 
-			// 	glVertex(box[n], dx);
+			Vec3 color(v[0], v[1], v[2]);
+			getCellCoordinates(p, box, mDim);
+
+			mGLRenderer->addQuad(box, color, dx);
 		}
-		// glEnd();    
 	}
 }
 

@@ -73,6 +73,7 @@ void GLWidget::initializeGL()
 
 void GLWidget::genBuffers(){}
 void GLWidget::loadBuffers(unsigned int index){}
+void GLWidget::drawPoints() {}
 void GLWidget::drawLines(){}
 void GLWidget::drawTriangles(){}
 void GLWidget::drawNormalTriangles(){}
