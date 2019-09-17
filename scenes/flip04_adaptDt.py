@@ -95,6 +95,7 @@ testInitGridWithPos(tstGrid)
 pTest.setConst( 0.1 )
 
 lastFrame = -1
+GUI = False
 if 1 and (GUI):
 	gui = Gui()
 	gui.show( dim==2 )

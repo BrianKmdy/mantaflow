@@ -404,28 +404,28 @@ template<> void GridPainter<int>::paint() {
 			int flag = 0;
 			flag = mLocalGrid->get(p);
 
-			Vec3 color;
+			Vec4 color;
 			if (flag & FlagGrid::TypeObstacle) {
-				color = Vec3(0.2,0.2,0.2); // dark gray
+				color = Vec4(0.2,0.2,0.2,1.0); // dark gray
 			} else if (flag & FlagGrid::TypeOutflow) {
-				color = Vec3(0.9,0.3,0);   // orange
+				color = Vec4(0.9,0.3,0, 1.0);   // orange
 			} else if (flag & FlagGrid::TypeEmpty) {
-				color = Vec3(0.25,0,0.2);  // dark purple
+				color = Vec4(0.25,0,0.2, 1.0);  // dark purple
 			} else if (flag & FlagGrid::TypeFluid) {
 				if(skipFluid) continue;
-				color = Vec3(0,0,0.75);    // blue
+				color = Vec4(0,0,0.75, 1.0);    // blue
 			} else {
-				color = Vec3(0.5,0,0); // unknown , medium red
+				color = Vec4(0.5,0,0, 1.0); // unknown , medium red
 			}
 
 			getCellCoordinates(p, box, mDim, true); 
 			for (int n=1;n<=8;n++)
-				mGLRenderer->addVec(box[(n / 2) % 4], color, dx);
+				mGLRenderer->addVertex(glRenderer::ShapeLines, box[(n / 2) % 4], color, dx);
 		}
 	}
 	if (rbox) {
 		Vec3 p0(0.0), p1(toVec3(mLocalGrid->getSize())),p(p0);
-		mGLRenderer->addBox(p0, p1, Vec3(0.5, 0, 0), dx);
+		mGLRenderer->addBox(glRenderer::ShapeLines, p0, p1, Vec4(0.5, 0, 0, 1.0), dx);
 	}
 }
 
@@ -447,24 +447,24 @@ template<> void GridPainter<Real>::paint() {
 	if( (dm==RealDispStd) || (dm==RealDispLevelset) ) {
 		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
 		{ 
-			Vec3 color;
+			Vec4 color;
 			Real v = mLocalGrid->get(p) * scale; 
 			if (dm==RealDispLevelset) {
 				v = max(min(v*0.2, 1.0),-1.0);
 				if (v >= 0)
-					color = Vec3(0, 0, 0.5);
+					color = Vec4(0, 0, 0.5, 1.0);
 				else
-					color = Vec3(0.5, 1.0 + v, 0);
+					color = Vec4(0.5, 1.0 + v, 0, 1.0);
 			} else { // RealDispStd
 				if (v>0)
-					color = Vec3(v, v, v);
+					color = Vec4(v, v, v, 1.0);
 				else
-					color = Vec3(-v, 0, 0);
+					color = Vec4(-v, 0, 0, 1.0);
 			}
 
 			getCellCoordinates(p, box, mDim);
 
-			mGLRenderer->addQuad(box, color, dx);
+			mGLRenderer->addQuad(glRenderer::ShapeFlatTriangles, box, color, dx);
 		}
 	}
 	if( (dm==RealDispShadeVol) || (dm==RealDispShadeSurf) ) {
@@ -486,7 +486,7 @@ template<> void GridPainter<Real>::paint() {
 
 			getCellCoordinates(p, box, mDim);
 
-			mGLRenderer->addQuad(box, col, dx);
+			mGLRenderer->addQuad(glRenderer::ShapeFlatTriangles, box, Vec4(col.x, col.y, col.z, 1.0), dx);
 		}
 	}
 }
@@ -515,20 +515,20 @@ template<> void GridPainter<Vec3>::paint() {
 					if (p.z < mLocalGrid->getSizeZ()-1) 
 						vel.z = 0.5 * (vel.z + scale * mLocalGrid->get(p.x,p.y,p.z+1).z);
 				}
-				mGLRenderer->addVec(pos, Vec3(0.2, 0.45, 0.8), dx);
-				mGLRenderer->addVec(pos + vel * 1.2, Vec3(0.0, 1.0, 0.0), dx);
+				mGLRenderer->addVertex(glRenderer::ShapeLines, pos, Vec4(0.2, 0.45, 0.8, 1.0), dx);
+				mGLRenderer->addVertex(glRenderer::ShapeLines, pos + vel * 1.2, Vec4(0.0, 1.0, 0.0, 1.0), dx);
 			} else if (dm==VecDispStaggered) {
 				for (int d=0; d<3; d++) {
 					if (fabs(vel[d]) < 1e-2) continue;
 					Vec3 p1(pos);
 					if (mac)
 						p1[d] -= 0.5f;
-					Vec3 color(0.0);
+					Vec4 color(0.0);
 					color[d] = 1;
 
-					mGLRenderer->addVec(p1, color, dx);
+					mGLRenderer->addVertex(glRenderer::ShapeLines, p1, color, dx);
 					p1[d] += vel[d];
-					mGLRenderer->addVec(p1, Vec3(1.0, 1.0, 0.0), dx);
+					mGLRenderer->addVertex(glRenderer::ShapeLines, p1, Vec4(1.0, 1.0, 0.0, 1.0), dx);
 				}
 			}
 		}
@@ -549,10 +549,10 @@ template<> void GridPainter<Vec3>::paint() {
 				v[c] = fmod( (Real)v[c], (Real)1.);
 			} 
 			//v *= mLocalGrid->get(0)[0]; // debug, show uv grid weight as brightness of values
-			Vec3 color(v[0], v[1], v[2]);
+			Vec4 color(v[0], v[1], v[2], 1.0);
 			getCellCoordinates(p, box, mDim);
 
-			mGLRenderer->addQuad(box, color, dx);
+			mGLRenderer->addQuad(glRenderer::ShapeFlatTriangles, box, color, dx);
 		}
 	}
 }

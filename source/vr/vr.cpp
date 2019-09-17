@@ -137,7 +137,8 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_unCompanionWindowProgramID(0)
 	, m_unControllerTransformProgramID(0)
 	, m_unRenderModelProgramID(0)
-	, m_unTestProgramID(0)
+	, m_unStandardProgramID(0)
+	, m_unPointProgramID(0)
 	, m_unMeshProgramID(0)
 	, m_pHMD(NULL)
 	, m_bDebugOpenGL(false)
@@ -155,7 +156,8 @@ CMainApplication::CMainApplication(int argc, char* argv[])
 	, m_nSceneMatrixLocation(-1)
 	, m_nControllerMatrixLocation(-1)
 	, m_nRenderModelMatrixLocation(-1)
-	, m_nTestMatrixLocation(-1)
+	, m_nStandardMatrixLocation(-1)
+	, m_nPointMatrixLocation(-1)
 	, m_nMeshViewLocation(-1)
 	, m_nMeshModelLocation(-1)
 	, m_nMeshLightLocation(-1)
@@ -214,6 +216,7 @@ CMainApplication::~CMainApplication()
 	dprintf("Shutdown");
 }
 
+// XXX/bmoodf Remove this
 GLuint testarray = 0;
 GLuint testbuffer = 0;
 unsigned int fcounter = 0;
@@ -221,28 +224,23 @@ unsigned int fcounter = 0;
 Vec3 min;
 Vec3 max;
 
-void updateBounds(std::vector<float>& vertices) {
+// XXX/bmoodf Remove this
+void updateBounds(std::vector<glRenderer::GLVertex>& vertices) {
 	for (int i = 0; i < vertices.size(); ++i) {
-		if (i % 3 == 0) {
-			if (vertices[i] < min.x)
-				min.x = vertices[i];
-			if (vertices[i] > max.x)
-				max.x = vertices[i];
-		}
+		if (vertices[i].vertex.x < min.x)
+			min.x = vertices[i].vertex.x;
+		if (vertices[i].vertex.x > max.x)
+			max.x = vertices[i].vertex.x;
 
-		if (i % 3 == 1) {
-			if (vertices[i] < min.y)
-				min.y = vertices[i];
-			if (vertices[i] > max.y)
-				max.y = vertices[i];
-		}
+		if (vertices[i].vertex.y < min.y)
+			min.y = vertices[i].vertex.y;
+		if (vertices[i].vertex.y > max.y)
+			max.y = vertices[i].vertex.y;
 
-		if (i % 3 == 2) {
-			if (vertices[i] < min.z)
-				min.z = vertices[i];
-			if (vertices[i] > max.z)
-				max.z = vertices[i];
-		}
+		if (vertices[i].vertex.z < min.z)
+			min.z = vertices[i].vertex.z;
+		if (vertices[i].vertex.z > max.z)
+			max.z = vertices[i].vertex.z;
 	}
 }
 
@@ -263,95 +261,99 @@ Matrix4 CMainApplication::getModdedMatrix() {
 void CMainApplication::genBuffers()
 {
 	glGenVertexArrays(NumShapes, m_vertexArrays);
-	glGenBuffers(NumShapes, m_buffers);
+	glGenBuffers(NumShapes, m_vertexBuffers);
 
 	// XXX/bmoody Need to check for success
 }
 
-void CMainApplication::loadBuffers(unsigned int index)
+void CMainApplication::loadBuffers(unsigned int activeIndex)
 {
 	// XXX/bmoody Can probably be more efficient by just calling buffersubdata if the size hasn't changed
 
 	// XXX/bmoody Remove this
-	updateBounds(m_vertices[index][ShapeLines]);
+	updateBounds(m_vertices[activeIndex][ShapeLines]);
 
 	// Points
-	glBindVertexArray(m_vertexArrays[ShapePoints]);
-	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapePoints]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapePoints].size() + m_colors[index][ShapePoints].size()), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapePoints].size() * sizeof(float), &m_vertices[index][ShapePoints][0]);
-	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapePoints].size() * sizeof(float), m_colors[index][ShapePoints].size() * sizeof(float), &m_colors[index][ShapePoints][0]);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)(m_vertices[index][ShapePoints].size() * sizeof(float)));
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+	// XXX/bmoody Use a shader for point size
+	if (!m_vertices[activeIndex][ShapePoints].empty()) {
+		glBindVertexArray(m_vertexArrays[ShapePoints]);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapePoints]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * m_vertices[activeIndex][ShapePoints].size(), &m_vertices[activeIndex][ShapePoints][0], GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) 0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 4, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) (sizeof(Vec3) + sizeof(Vec4) + sizeof(Vec3)));
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+	}
 
 	// Lines
-	glBindVertexArray(m_vertexArrays[ShapeLines]);
-	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapeLines]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapeLines].size() + m_colors[index][ShapeLines].size()), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapeLines].size() * sizeof(float), &m_vertices[index][ShapeLines][0]);
-	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapeLines].size() * sizeof(float), m_colors[index][ShapeLines].size() * sizeof(float), &m_colors[index][ShapeLines][0]);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)(m_vertices[index][ShapeLines].size() * sizeof(float)));
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+	if (!m_vertices[activeIndex][ShapeLines].empty()) {
+		glBindVertexArray(m_vertexArrays[ShapeLines]);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeLines]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * m_vertices[activeIndex][ShapeLines].size(), &m_vertices[activeIndex][ShapeLines][0], GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 4, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+	}
 
 	// Flat triangles
-	glBindVertexArray(m_vertexArrays[ShapeFlatTriangles]);
-	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapeFlatTriangles]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapeFlatTriangles].size() + m_colors[index][ShapeFlatTriangles].size()), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapeFlatTriangles].size() * sizeof(float), &m_vertices[index][ShapeFlatTriangles][0]);
-	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapeFlatTriangles].size() * sizeof(float), m_colors[index][ShapeFlatTriangles].size() * sizeof(float), &m_colors[index][ShapeFlatTriangles][0]);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)(m_vertices[index][ShapeFlatTriangles].size() * sizeof(float)));
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+	if (!m_vertices[activeIndex][ShapeFlatTriangles].empty()) {
+		glBindVertexArray(m_vertexArrays[ShapeFlatTriangles]);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeFlatTriangles]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * m_vertices[activeIndex][ShapeFlatTriangles].size(), &m_vertices[activeIndex][ShapeFlatTriangles][0], GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) 0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 4, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+	}
 
 	// Shaded triangles
-	glBindVertexArray(m_vertexArrays[ShapeShadedTriangles]);
-	glBindBuffer(GL_ARRAY_BUFFER, m_buffers[ShapeShadedTriangles]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * (m_vertices[index][ShapeShadedTriangles].size() + m_colors[index][ShapeShadedTriangles].size() + m_normals[index][ShapeShadedTriangles].size()), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_vertices[index][ShapeShadedTriangles].size() * sizeof(float), &m_vertices[index][ShapeShadedTriangles][0]);
-	glBufferSubData(GL_ARRAY_BUFFER, m_vertices[index][ShapeShadedTriangles].size() * sizeof(float), m_colors[index][ShapeShadedTriangles].size() * sizeof(float), &m_colors[index][ShapeShadedTriangles][0]);
-	glBufferSubData(GL_ARRAY_BUFFER, (m_vertices[index][ShapeShadedTriangles].size() + m_colors[index][ShapeShadedTriangles].size()) * sizeof(float), m_normals[index][ShapeShadedTriangles].size() * sizeof(float), &m_normals[index][ShapeShadedTriangles][0]);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, false, 4 * sizeof(float), (GLvoid*)(m_vertices[index][ShapeShadedTriangles].size() * sizeof(float)));
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, false, 3 * sizeof(float), (GLvoid*)((m_vertices[index][ShapeShadedTriangles].size() + m_colors[index][ShapeShadedTriangles].size()) * sizeof(float)));
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(2);
+	if (!m_vertices[activeIndex][ShapeShadedTriangles].empty()) {
+		glBindVertexArray(m_vertexArrays[ShapeShadedTriangles]);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeShadedTriangles]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * m_vertices[activeIndex][ShapeShadedTriangles].size(), &m_vertices[activeIndex][ShapeShadedTriangles][0], GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) 0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 4, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(GLVertex), (GLvoid*) (sizeof(Vec3) + sizeof(Vec4)));
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+	}
 
 	for (unsigned int i = 0; i < NumShapes; ++i) {
-		m_vertexCount[i] = m_vertices[index][i].size() / 3;
+		m_vertexCount[i] = m_vertices[activeIndex][i].size();
 	}
 }
 
 void CMainApplication::drawPoints()
 {
-	glPointSize(2.5);
-
+	if (!m_vertexCount[ShapePoints])
+		return;
+	
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
-	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glUseProgram(m_unPointProgramID);
+	glUniformMatrix4fv(m_nPointMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
 	glBindVertexArray(m_vertexArrays[ShapePoints]);
 
 	glDrawArrays(GL_POINTS, 0, m_vertexCount[ShapePoints]);
@@ -362,10 +364,13 @@ void CMainApplication::drawPoints()
 
 void CMainApplication::drawLines()
 {
+	if (!m_vertexCount[ShapeLines])
+		return;
+
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
-	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glUseProgram(m_unStandardProgramID);
+	glUniformMatrix4fv(m_nStandardMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
 	glBindVertexArray(m_vertexArrays[ShapeLines]);
 
 	glDrawArrays(GL_LINES, 0, m_vertexCount[ShapeLines]);
@@ -376,10 +381,13 @@ void CMainApplication::drawLines()
 
 void CMainApplication::drawTriangles()
 {
+	if (!m_vertexCount[ShapeFlatTriangles])
+		return;
+
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 
-	glUseProgram(m_unTestProgramID);
-	glUniformMatrix4fv(m_nTestMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
+	glUseProgram(m_unStandardProgramID);
+	glUniformMatrix4fv(m_nStandardMatrixLocation, 1, GL_FALSE, (matView * getModdedMatrix()).get());
 	glBindVertexArray(m_vertexArrays[ShapeFlatTriangles]);
 
 	glDrawArrays(GL_TRIANGLES, 0, m_vertexCount[ShapeFlatTriangles]);
@@ -390,6 +398,9 @@ void CMainApplication::drawTriangles()
 
 void CMainApplication::drawNormalTriangles()
 {
+	if (!m_vertexCount[ShapeShadedTriangles])
+		return;
+
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 	Matrix4 matModel = getModdedMatrix();
 
@@ -1158,16 +1169,16 @@ bool CMainApplication::CreateAllShaders()
 		"}\n"
 	);
 
-	m_unTestProgramID = CompileGLShader(
-		"test",
+	m_unStandardProgramID = CompileGLShader(
+		"Standard",
 		"#version 410\n"
 		"uniform mat4 matrix;\n"
 		"layout(location = 0) in vec4 position;\n"
-		"layout(location = 1) in vec3 v3ColorIn;\n"
+		"layout(location = 1) in vec4 v4ColorIn;\n"
 		"out vec4 v4Color;\n"
 		"void main()\n"
 		"{\n"
-		"	v4Color.xyz = v3ColorIn; v4Color.a = 1.0;\n"
+		"	v4Color = v4ColorIn;\n"
 		"	gl_Position = matrix * position;\n"
 		"}\n",
 
@@ -1180,17 +1191,49 @@ bool CMainApplication::CreateAllShaders()
 		"   outputColor = v4Color;\n"
 		"}\n"
 		);
-	m_nTestMatrixLocation = glGetUniformLocation(m_unTestProgramID, "matrix");
-	if (m_nTestMatrixLocation == -1)
+	m_nStandardMatrixLocation = glGetUniformLocation(m_unStandardProgramID, "matrix");
+	if (m_nStandardMatrixLocation == -1)
+	{
+		dprintf("Unable to find matrix uniform in render model shader\n");
+		return false;
+	}
+
+	m_unPointProgramID = CompileGLShader(
+		"Point",
+		"#version 410\n"
+		"uniform mat4 matrix;\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec4 v4ColorIn;\n"
+		"layout(location = 2) in float pointSize;\n"
+		"out vec4 v4Color;\n"
+		"void main()\n"
+		"{\n"
+		"	v4Color = v4ColorIn;\n"
+		"	gl_Position = matrix * position;\n"
+		"	gl_PointSize = pointSize;\n"
+		"}\n",
+
+		// fragment shader
+		"#version 410\n"
+		"in vec4 v4Color;\n"
+		"out vec4 outputColor;\n"
+		"void main()\n"
+		"{\n"
+		"   outputColor = v4Color;\n"
+		"}\n"
+	);
+	m_nPointMatrixLocation = glGetUniformLocation(m_unPointProgramID, "matrix");
+	if (m_nPointMatrixLocation == -1)
 	{
 		dprintf("Unable to find matrix uniform in render model shader\n");
 		return false;
 	}
 
 	m_unMeshProgramID = CompileGLShader(
-		"mesh",
+		"Mesh",
 
 		// Vertex Shader
+		// XXX/bmoody This transpose can be expensive
 		"#version 410\n"
 		"uniform mat4 view;\n"
 		"uniform mat4 model;\n"
@@ -1247,7 +1290,8 @@ bool CMainApplication::CreateAllShaders()
 		&& m_unControllerTransformProgramID != 0
 		&& m_unRenderModelProgramID != 0
 		&& m_unCompanionWindowProgramID != 0
-		&& m_unTestProgramID != 0
+		&& m_unStandardProgramID != 0
+		&& m_unPointProgramID != 0
 		&& m_unMeshProgramID;
 }
 
@@ -1588,7 +1632,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	// points.push_back(-0.5);
 	// points.push_back(-0.5);
 	// points.push_back(0.0);
-	// glUseProgram(m_unTestProgramID);
+	// glUseProgram(m_unStandardProgramID);
 	// glEnableClientState(GL_VERTEX_ARRAY);
 	// glVertexPointer(3, GL_FLOAT, 0, &points[0]);
 	// glDrawArrays(GL_QUADS, 0, 4);

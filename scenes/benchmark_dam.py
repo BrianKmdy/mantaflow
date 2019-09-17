@@ -91,6 +91,7 @@ sampleShapeWithParticles(shape=fld, flags=gFlags, parts=pp, discretization=param
 end = pp.pySize()
 pT.setConstRange(s=FlagFluid, begin=begin, end=end, notiming=True)
 
+guion = False
 if guion:
         gui = Gui()
         gui.show()

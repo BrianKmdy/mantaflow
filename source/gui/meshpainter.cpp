@@ -180,7 +180,7 @@ void MeshPainter::paint() {
 		for(int tri=0; tri<mBackground->numTris(); tri++) {
 			Vec3 normal = mBackground->getFaceNormal(tri);
 			for (int c=0; c<3; c++) {
-				mGLRenderer->addNormalVec(mBackground->getNode(tri, c), color4, normal, dx);
+				mGLRenderer->addNormalVertex(glRenderer::ShapeShadedTriangles, mBackground->getNode(tri, c), color4, normal, dx);
 			}
 		}
 
@@ -234,7 +234,7 @@ void MeshPainter::paint() {
 					tc = nmod(tc, Vec3(1,1,1));
 					color4 = Vec4(tc.x, tc.y, tc.z, 1.0);
 				}
-				mGLRenderer->addNormalVec(mLocalMesh->getNode(tri, c), color4, mLocalMesh->getFaceNormal(tri), dx);
+				mGLRenderer->addNormalVertex(glRenderer::ShapeShadedTriangles, mLocalMesh->getNode(tri, c), color4, mLocalMesh->getFaceNormal(tri), dx);
 			}
 		}
 
@@ -252,34 +252,34 @@ void MeshPainter::paint() {
 	// glDisable(GL_TEXTURE_2D);
 	
 	// draw mesh lines
-	Vec3 color3;
+	Vec4 color;
 	if(mMode == ModeLines) {
-		color3 = Vec3(1.0, 0.9, 0.9);
+		color = Vec4(1.0, 0.9, 0.9, 1.0);
 		glLineWidth(1.0);
 		const int numTris = (int)mLocalMesh->numTris();
 		for(int tri=0; tri<numTris; tri++)
 			for (int j=5; j<5+6; j++)
-				mGLRenderer->addVec(mLocalMesh->getNode(tri, (j / 2) % 3), color3, dx);
+				mGLRenderer->addVertex(glRenderer::ShapeLines, mLocalMesh->getNode(tri, (j / 2) % 3), color, dx);
 		
 		// XXX/bmoody Draw lines
 	}
 	
 	// draw vertex points
 	if(mMode == ModePoints) {
-		static const Vec3 colorSpecial (0.3, 0.5, 0.2);
+		static const Vec4 colorSpecial (0.3, 0.5, 0.2, 1.0);
 		//static const Vec3 colortable[] = { Vec3(0.5), Vec3(1,0,0), Vec3(0,1,0), Vec3(0,0,1) };
 	
 		glPointSize(2.0);
 		const int numNodes = (int)mLocalMesh->numNodes();
 		for(int i=0; i<numNodes; i++) {
-			color3 =  Vec3(0.5, 0.5, 0.5);
+			color =  Vec4(0.5, 0.5, 0.5, 1.0);
 			if (mLocalMesh->isNodeFixed(i))
-				color3 = Vec3(0,1,0);
+				color = Vec4(0,1,0,1);
 			else if (mLocalMesh->nodes(i).flags & Mesh::NfMarked)
-				color3 = Vec3(1,0,0);
+				color = Vec4(1,0,0,1);
 			//int flags = mLocalMesh->flags(i);
 			
-			mGLRenderer->addVec(mLocalMesh->nodes(i).pos, color3, dx);
+			mGLRenderer->addVertex(glRenderer::ShapeLines, mLocalMesh->nodes(i).pos, color, dx);
 		}
 		
 		// XXX/bmoody Draw points

@@ -60,6 +60,7 @@ flags.fillGrid()
 if doOpen:
 	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
 
+GUI = False
 if (GUI):
 	gui = Gui()
 	gui.show(True)

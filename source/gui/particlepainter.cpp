@@ -126,7 +126,7 @@ void ParticlePainter::paint() {
 			if (vp->isActive(i)) {
 				Vec3 pos = (*vp)[i].pos;
 
-				mGLRenderer->addPoint(pos, Vec3(1, 1, 0), (*vp)[i].sigma, dx);
+				mGLRenderer->addPoint(glRenderer::ShapePoints, pos, Vec4(1, 1, 0, 1), (*vp)[i].sigma, dx);
 			}
 		}        
 	} else if (mLocal->getType() == ParticleBase::FILAMENT) {
@@ -151,7 +151,8 @@ void ParticlePainter::paint() {
 		for(int i=0; i<(int)vp->size(); i++) {
 			Vec3 pos = (*vp)[i].pos;
 
-			mGLRenderer->addPoint(pos, (*vp)[i].color, 2.5, dx);
+			Vec3 color = (*vp)[i].color;
+			mGLRenderer->addPoint(glRenderer::ShapePoints, pos, Vec4(color.x, color.y, color.z, 1.0), 2.5, dx);
 			
 		}   
 		

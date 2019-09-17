@@ -58,6 +58,7 @@ pressure = s.create(RealGrid)
 
 timings = Timings()
 
+GUI = False
 if 1 and (GUI):
 	gui = Gui()
 	gui.show( True ) 

@@ -31,6 +31,7 @@ obsVel.setConst(obsVelVec)
 obsVel.setBound(value=Vec3(0.), boundaryWidth=bWidth+1) # make sure walls are static
 obs = "dummy"; phiObs = "dummy2"
 
+GUI = False
 if (GUI):
 	gui = Gui()
 	gui.show( True ) 

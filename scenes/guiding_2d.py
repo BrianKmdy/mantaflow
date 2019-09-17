@@ -41,6 +41,7 @@ bWidth=1
 flags.initDomain(boundaryWidth=bWidth) 
 flags.fillGrid()
 
+GUI = False
 if (GUI):
 	gui = Gui()
 	gui.show()

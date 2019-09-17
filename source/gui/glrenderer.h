@@ -13,6 +13,13 @@ class glRenderer
 public:
 	enum shapes { ShapePoints = 0, ShapeLines, ShapeFlatTriangles, ShapeShadedTriangles, NumShapes };
 
+	struct GLVertex {
+		Vec3 vertex;
+		Vec4 color;
+		Vec3 normal;
+		float size;
+	};
+
 	glRenderer();
 
 	void swapBuffers();
@@ -20,14 +27,16 @@ public:
 	virtual void loadBuffers(unsigned int index) = 0;
 
 	void draw();
+	virtual void drawPoints() = 0;
 	virtual void drawLines() = 0;
 	virtual void drawTriangles() = 0;
 	virtual void drawNormalTriangles() = 0;
 
-	void addVec(Vec3 vertex, Vec3 color, float mod = 1.0);
-	void addNormalVec(Vec3 vertex, Vec4 color, Vec3 normal, float mod = 1.0);
-	void addQuad(Vec3 boxVertices[4], Vec3 color, float mod = 1.0);
-	void addBox(Vec3& p0, const Vec3& p1, Vec3 color, float mod = 1.0);
+	void addVertex(int shapeIndex, Vec3& vertex, Vec4& color, float mod = 1.0);
+	void addNormalVertex(int shapeIndex, Vec3& vertex, Vec4& color, Vec3& normal, float mod = 1.0);
+	void addPoint(int shapeIndex, Vec3& vertex, Vec4& color, float size, float mod = 1.0);
+	void addQuad(int shapeIndex, Vec3 boxVertices[4], Vec4& color, float mod = 1.0);
+	void addBox(int shapeIndex, Vec3& p0, const Vec3& p1, Vec4 color, float mod = 1.0);
 
 	bool mInitialized;
 	bool mBufferFilled;
@@ -36,13 +45,11 @@ public:
 
 protected:
 	unsigned int m_activeIndex;
-	std::vector<float> m_vertices[2][NumShapes];
-	std::vector<float> m_colors[2][NumShapes];
-	std::vector<float> m_normals[2][NumShapes];
+	std::vector<GLVertex> m_vertices[2][NumShapes];
 
 	unsigned int m_vertexCount[NumShapes];
 	unsigned int m_vertexArrays[NumShapes];
-	unsigned int m_buffers[NumShapes];
+	unsigned int m_vertexBuffers[NumShapes];
 };
 
 }

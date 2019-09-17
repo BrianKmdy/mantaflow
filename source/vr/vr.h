@@ -122,7 +122,7 @@ public:
 	virtual ~CMainApplication();
 
 	virtual void genBuffers();
-	virtual void loadBuffers(unsigned int index);
+	virtual void loadBuffers(unsigned int activeIndex);
 
 	virtual void drawPoints();
 	virtual void drawLines();
@@ -289,13 +289,15 @@ private: // OpenGL bookkeeping
 	GLuint m_unCompanionWindowProgramID;
 	GLuint m_unControllerTransformProgramID;
 	GLuint m_unRenderModelProgramID;
-	GLuint m_unTestProgramID;
+	GLuint m_unStandardProgramID;
+	GLuint m_unPointProgramID;
 	GLuint m_unMeshProgramID;
 
 	GLint m_nSceneMatrixLocation;
 	GLint m_nControllerMatrixLocation;
 	GLint m_nRenderModelMatrixLocation;
-	GLint m_nTestMatrixLocation;
+	GLint m_nStandardMatrixLocation;
+	GLint m_nPointMatrixLocation;
 	GLint m_nMeshViewLocation;
 	GLint m_nMeshModelLocation;
 	GLint m_nMeshLightLocation;

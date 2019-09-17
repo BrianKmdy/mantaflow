@@ -81,6 +81,7 @@ pTest.setConst( 0.1 )
 if saveParts:
 	pressure.save( 'ref_flipParts_0000.uni' );
 
+GUI = False
 if 1 and (GUI):
 	gui = Gui()
 	gui.show()
