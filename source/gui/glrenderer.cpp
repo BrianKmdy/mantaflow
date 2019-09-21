@@ -7,7 +7,7 @@ glRenderer::glRenderer()
 {
 }
 
-void glRenderer::swapBuffers() {
+void glRenderer::swap() {
 	if (!mInitialized)
 		return;
 

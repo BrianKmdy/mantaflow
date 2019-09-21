@@ -390,6 +390,8 @@ template<> void GridPainter<int>::paint() {
 	if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
+	std::cout << "painting gridlines" << std::endl;
+
 	float dx = mLocalGrid->getDx();
 	Vec3 box[4];
 	Vec3 color = Vec3(0.5,0,0);

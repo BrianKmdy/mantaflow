@@ -22,7 +22,7 @@ public:
 
 	glRenderer();
 
-	void swapBuffers();
+	void swap();
 	virtual void genBuffers() = 0;
 	virtual void loadBuffers(unsigned int index) = 0;
 

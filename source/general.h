@@ -19,7 +19,7 @@
 #include <cmath>
 #include <algorithm>
 
-#define VR
+// #define VR
 
 namespace Manta {
 

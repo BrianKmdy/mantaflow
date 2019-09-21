@@ -1602,7 +1602,7 @@ void CMainApplication::RenderScene(vr::Hmd_Eye nEye)
 	m_currentEye = nEye;
 
 	if (mBufferFilled)
-		swapBuffers();
+		swap();
 
 	draw();
 
