@@ -24,7 +24,7 @@
 namespace Manta {
 
 // ui data exchange
-#ifdef GUI
+#if defined(GUI) || defined(VR)
 	// defined in qtmain.cpp
 	extern void updateQtGui(bool full, int frame, float time, const std::string& curPlugin);
 #else

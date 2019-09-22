@@ -83,6 +83,12 @@ void GLWidget::loadBuffers(unsigned int activeIndex)
 	for (int i = 0; i < NumShapes; i++)
 		std::cout << "buff " << i << ": " << m_vertexBuffers[i];
 
+	if (!m_vertices[activeIndex][ShapePoints].empty()) {
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapePoints]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * m_vertices[activeIndex][ShapePoints].size(), &m_vertices[activeIndex][ShapePoints][0], GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
 	if (!m_vertices[activeIndex][ShapeLines].empty()) {
 		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeLines]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * m_vertices[activeIndex][ShapeLines].size(), &m_vertices[activeIndex][ShapeLines][0], GL_STATIC_DRAW);
@@ -95,6 +101,12 @@ void GLWidget::loadBuffers(unsigned int activeIndex)
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
+	if (!m_vertices[activeIndex][ShapeShadedTriangles].empty()) {
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeShadedTriangles]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(GLVertex) * m_vertices[activeIndex][ShapeShadedTriangles].size(), &m_vertices[activeIndex][ShapeShadedTriangles][0], GL_STATIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
 	for (unsigned int i = 0; i < NumShapes; ++i) {
 		m_vertexCount[i] = m_vertices[activeIndex][i].size();
 	}
@@ -102,18 +114,27 @@ void GLWidget::loadBuffers(unsigned int activeIndex)
 
 void GLWidget::drawPoints()
 {
+	if (!m_vertexCount[ShapePoints])
+		return;
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapePoints]);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glVertexPointer(3, GL_FLOAT, sizeof(GLVertex), (GLvoid*)0);
+	glColorPointer(4, GL_FLOAT, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
+	glDrawArrays(GL_POINTS, 0, m_vertexCount[ShapePoints]);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void GLWidget::drawLines()
 {
-	glEnable(GL_DEPTH_TEST);
 	if (!m_vertexCount[ShapeLines])
 		return;
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeLines]);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glVertexPointer(3, GL_FLOAT, sizeof(GLVertex), (GLvoid*)0);
+	glVertexPointer(3, GL_FLOAT, sizeof(GLVertex), (GLvoid*) 0);
 	glColorPointer(4, GL_FLOAT, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
  	glDrawArrays(GL_LINES, 0, m_vertexCount[ShapeLines]);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -121,14 +142,13 @@ void GLWidget::drawLines()
 
 void GLWidget::drawTriangles()
 {
-	glEnable(GL_DEPTH_TEST);
 	if (!m_vertexCount[ShapeFlatTriangles])
 		return;
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeFlatTriangles]);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
-	glVertexPointer(3, GL_FLOAT, sizeof(GLVertex), (GLvoid*)0);
+	glVertexPointer(3, GL_FLOAT, sizeof(GLVertex), (GLvoid*) 0);
 	glColorPointer(4, GL_FLOAT, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
  	glDrawArrays(GL_TRIANGLES, 0, m_vertexCount[ShapeFlatTriangles]);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -136,14 +156,76 @@ void GLWidget::drawTriangles()
 
 void GLWidget::drawNormalTriangles()
 {
+	if (!m_vertexCount[ShapeShadedTriangles])
+		return;
+
+	bool specular = true;
+
+	// control colors
+	float max = 1.0;
+	float dim = 0.5;
+	float dims = specular ? dim : 0;
+	float maxs = specular ? max : 0;
+	float amb = 0.1;
+	float shininess = 50.;
+	dim = 0.5; max = 0.75; amb = 0.25;
+
+	float ambient0[] = { amb, amb, amb, max };
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
+
+	float diffuse0[] = { max, dim, dim, 1.0 };
+	float specular0[] = { maxs, dims, dims, 1.0 };
+	float position0[] = { 5., 5., 5., 1.0f };
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
+	glLightfv(GL_LIGHT0, GL_POSITION, position0);
+
+	float diffuse1[] = { dim, max, dim, 1.0 };
+	float specular1[] = { dims, maxs, dims, 1.0 };
+	float position1[] = { 5., -5., -5., 1.0f };
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specular1);
+	glLightfv(GL_LIGHT1, GL_POSITION, position1);
+
+	float diffuse2[] = { dim, dim, max, 1.0 };
+	float specular2[] = { dims, dims, maxs, 1.0 };
+	float position2[] = { 0.3,  2., -10., 1.0f };
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse2);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, specular2);
+	glLightfv(GL_LIGHT2, GL_POSITION, position2);
+
+	float specReflection[] = { dims, dims, dims, 1.0f };
+	if (shininess == 0.) specReflection[0] = specReflection[1] = specReflection[2] = 0.;
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	glEnable(GL_COLOR_MATERIAL);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapeShadedTriangles]);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glVertexPointer(3, GL_FLOAT, sizeof(GLVertex), (GLvoid*) 0);
+	glColorPointer(4, GL_FLOAT, sizeof(GLVertex), (GLvoid*) sizeof(Vec3));
+	glNormalPointer(GL_FLOAT, sizeof(GLVertex), (GLvoid*) (sizeof(Vec3) + sizeof(Vec4)));
+	glDrawArrays(GL_TRIANGLES, 0, m_vertexCount[ShapeShadedTriangles]);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glDisable(GL_COLOR_MATERIAL);
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHT1);
+	glDisable(GL_LIGHT2);
+	glDisable(GL_LIGHTING);
 }
 
 void GLWidget::paintGL()
 {
 	if (mGridsize.max() == 0) return;
-	glDepthFunc(GL_ALWAYS);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 	//glEnable(GL_POLYGON_OFFSET_FILL);
 	//glPolygonOffset(0,0);    
 	

@@ -163,7 +163,6 @@ void ParticlePainter::paint() {
 	glEnable(GL_DEPTH_TEST); 
 }
 
-// XXX/bmoody Paint here
 void ParticlePainter::paintBasicSys() {
 	BasicParticleSystem* bp = (BasicParticleSystem*) mLocal;
 	//int dim = mGridRef->getDim();
@@ -198,18 +197,15 @@ void ParticlePainter::paintBasicSys() {
 			if(!pdi) break;
 			mHavePdata = true;
 			drewPoints = true;
-			glPointSize(1.5);
-			glBegin(GL_POINTS); 
 			for(int i=0; i<(int)bp->size(); i++) {
 				if (!bp->isActive(i)) continue;
 				Vec3 pos = (*bp)[i].pos; 
 				if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 				mMaxVal = std::max( pdi->get(i), mMaxVal );
 				Real val = pdi->get(i) * scale;
-				glColor3f(0,val,0);
-				glVertex(pos, dx); 
+
+				mGLRenderer->addPoint(glRenderer::ShapePoints, pos, Vec4(0, val, 0, 1), 1.5, dx);
 			}   
-			glEnd();
 			infoStr << "Pdata '"<<pdi->getName()<<"' #"<<pdNum<<", real\n";
 			} break;
 
@@ -218,8 +214,6 @@ void ParticlePainter::paintBasicSys() {
 			if(!pdi) break;
 			mHavePdata = true;
 			drewPoints = true;
-			glPointSize(1.5);
-			glBegin(GL_POINTS); 
 			for(int i=0; i<(int)bp->size(); i++) {
 				if (!bp->isActive(i)) continue;
 				Vec3 pos = (*bp)[i].pos; 
@@ -227,10 +221,9 @@ void ParticlePainter::paintBasicSys() {
 				Real val = pdi->get(i);
 				mMaxVal = std::max( val, mMaxVal );
 				val *= scale;
-				glColor3f(0,val,0);
-				glVertex(pos, dx); 
+
+				mGLRenderer->addPoint(glRenderer::ShapePoints, pos, Vec4(0, val, 0, 1), 1.5, dx);
 			}   
-			glEnd();
 			infoStr << "Pdata '"<<pdi->getName()<<"' #"<<pdNum<<", int\n";
 			} break;
 
@@ -244,25 +237,20 @@ void ParticlePainter::paintBasicSys() {
 
 			switch(mDisplayMode) {
 			case 0: // lines
-				glBegin(GL_LINES); 
 				for(int i=0; i<(int)bp->size(); i++) {
 					if (!bp->isActive(i)) continue;
 					Vec3 pos = (*bp)[i].pos; 
 					if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 					mMaxVal = std::max( norm(pdi->get(i)), mMaxVal );
 					Vec3 val = pdi->get(i) * scale;
-					glColor3f(0.5,0.0,0);
-					glVertex(pos, dx); 
+
+					mGLRenderer->addVertex(glRenderer::ShapeLines, pos, Vec4(0.5, 0.0, 0.0, 1.0), dx);
 					pos += val;
-					glColor3f(0.5,1.0,0);
-					glVertex(pos, dx); 
+					mGLRenderer->addVertex(glRenderer::ShapeLines, pos, Vec4(0.5, 1.0, 0.0, 1.0), dx);
 				}   
-				glEnd();
 				break;
 			case 1:
 				// colored points
-				glPointSize(2.0);
-				glBegin(GL_POINTS); 
 				for(int i=0; i<(int)bp->size(); i++) {
 					if (!bp->isActive(i)) continue;
 					Vec3 pos = (*bp)[i].pos; 
@@ -271,13 +259,12 @@ void ParticlePainter::paintBasicSys() {
 					Vec3 val = pdi->get(i) * scale;
 					for(int c=0; c<3; ++c) val[c] = fmod( (Real)val[c], (Real)1.);
 
-					glColor3f(val[0],val[1],val[2]);
-					glVertex(pos, dx); 
+					mGLRenderer->addPoint(glRenderer::ShapePoints, pos, Vec4(val[0], val[1], val[2], 1), 2.0, dx);
+
 					//pos += val;
 					//glColor3f(0.5,1.0,0);
 					//glVertex(pos, dx); 
 				}   
-				glEnd();
 				drewPoints = true;
 				break;
 			case 2:
@@ -285,8 +272,6 @@ void ParticlePainter::paintBasicSys() {
 				glEnable(GL_DEPTH_TEST); 
 
 				// colored by magnitude all
-				glPointSize(2.0);
-				glBegin(GL_POINTS); 
 				for(int i=0; i<(int)bp->size(); i++) {
 					if (!bp->isActive(i)) continue;
 					Vec3 pos = (*bp)[i].pos; 
@@ -295,10 +280,8 @@ void ParticlePainter::paintBasicSys() {
 					val[2] += 0.5; // base blue
 					for(int c=0; c<3; ++c) val[c] = std::min( (Real)val[c], (Real)1.);
 
-					glColor3f(val[0],val[1],val[2]);
-					glVertex(pos, dx); 
+					mGLRenderer->addPoint(glRenderer::ShapePoints, pos, Vec4(val[0], val[1], val[2], 1), 2.0, dx);
 				}   
-				glEnd();
 				drewPoints = true;
 				break;
 			}
@@ -321,25 +304,24 @@ void ParticlePainter::paintBasicSys() {
 
 	// otherwise draw center
 	if(!drewPoints) {
-		glPointSize(1.5);
-		glBegin(GL_POINTS);
+		Vec4 color;
 
 		for(int i=0; i<(int)bp->size(); i++) {
 			Vec3 pos = (*bp)[i].pos;
 			if (pos[dim] < plane || pos[dim] > plane + 1.0f) continue;
 			
 			if(!bp->isActive(i) ) {
-				glColor3f(1.0, 0., 0.); // deleted, red
+				color = Vec4(1.0, 0.0, 0.0, 1.0); // deleted, red
 			} else if(bp->getStatus(i) & ParticleBase::PNEW ) {
-				glColor3f(0.0, 1.0, 0.); // new, green
+				color = Vec4(0.0, 1.0, 0.0, 1.0); // new, green
 			} else {
 				//glColor3f(0, 0.0, 1.0); // regular, blue
-				glColor3f(1.0, 1.0, 1.0); // regular, white - hi contrast
+				color = Vec4(1.0, 1.0, 1.0, 1.0); // regular, white - hi contrast
 			}
-			glVertex(pos, dx);
+
+			mGLRenderer->addPoint(glRenderer::ShapePoints, pos, color, 1.5, dx);
 			
 		}   
-		glEnd();
 	}
 	
 	// draw basic part sys done
