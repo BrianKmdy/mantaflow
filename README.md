@@ -7,10 +7,12 @@ algorithms.  For more information on how to install, run and code with
 Mantaflow, please head over to our home page at
 [http://mantaflow.com](http://mantaflow.com)
 
+Please note - we're moving the mantaflow repository to github. In the future,
+please use [https://github.com/tum-pbs/mantaflow](https://github.com/tum-pbs/mantaflow).
+
 In addition, it provides a toolbox of for deep learning experiments with
 fluids. For a tighter integration with deep learning, please check out our
 differentiable solving framework _phiflow_:
 [https://github.com/tum-pbs/PhiFlow](https://github.com/tum-pbs/PhiFlow)
 
-![mantaflow logo](resources/mantaflow-logo1.png)
 
