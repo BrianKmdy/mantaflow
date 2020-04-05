@@ -19,11 +19,10 @@
 #include <cmath>
 #include <algorithm>
 
-// #define VR
-
 namespace Manta {
 
 // ui data exchange
+#define VR
 #if defined(GUI) || defined(VR)
 	// defined in qtmain.cpp
 	extern void updateQtGui(bool full, int frame, float time, const std::string& curPlugin);

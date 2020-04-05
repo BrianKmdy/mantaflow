@@ -134,72 +134,108 @@ void TextCheckbox::set(bool v) {
 // **************************************************************************************
 // GUI class
 
+#ifndef VR
 extern MainThread* gMainThread;
 extern GuiThread* gGuiThread;
 
-Gui::Gui() : 
-	PbClass(NULL), mGuiPtr(gGuiThread), mMainPtr(gMainThread) {     
-	if( getenv("MANTA_DISABLE_UI") && atoi( getenv("MANTA_DISABLE_UI") )) { errMsg("Cannot create GUI object, GUI disabled"); }
+Gui::Gui() :
+	PbClass(NULL), mGuiPtr(gGuiThread), mMainPtr(gMainThread) {
+	if (getenv("MANTA_DISABLE_UI") && atoi(getenv("MANTA_DISABLE_UI"))) { errMsg("Cannot create GUI object, GUI disabled"); }
 }
 
 void Gui::setBackgroundMesh(Mesh* m) {
 	mGuiPtr->getWindow()->setBackground(m);
 }
 void Gui::show(bool twoD) {
-	if(twoD)
-		mMainPtr->send( (int)MainWnd::EventSet2DCam );
-	mMainPtr->sendAndWait( (int)MainWnd::EventGuiShow );
+	if (twoD)
+		mMainPtr->send((int)MainWnd::EventSet2DCam);
+	mMainPtr->sendAndWait((int)MainWnd::EventGuiShow);
 }
-void Gui::update() { 
-	updateQtGui(true, -1,-1., "");
+void Gui::update() {
+	updateQtGui(true, -1, -1., "");
 }
 void Gui::pause() {
-	mMainPtr->sendAndWait((int)MainWnd::EventFullUpdate);         
-	mGuiPtr->getWindow()->pause();         
+	mMainPtr->sendAndWait((int)MainWnd::EventFullUpdate);
+	mGuiPtr->getWindow()->pause();
 }
 void Gui::screenshot(string filename) {
 	QString s(filename.c_str());
-	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "screenshot", Q_ARG(QString, s));    
+	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "screenshot", Q_ARG(QString, s));
 }
 
-void Gui::nextRealGrid() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextRealGrid" ); }
-void Gui::nextVec3Grid() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextVec3Grid" ); }
-void Gui::nextParts()    { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextParts" ); }
-void Gui::nextPdata()    { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextPdata" ); }
-void Gui::nextMesh()     { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextMesh" ); }
+void Gui::nextRealGrid() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextRealGrid"); }
+void Gui::nextVec3Grid() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextVec3Grid"); }
+void Gui::nextParts() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextParts"); }
+void Gui::nextPdata() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextPdata"); }
+void Gui::nextMesh() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextMesh"); }
 
-void Gui::nextVec3Display() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextVec3Display" ); }
-void Gui::nextPartDisplay() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextPartDisplay" ); }
-void Gui::nextMeshDisplay() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextMeshDisplay" ); }
+void Gui::nextVec3Display() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextVec3Display"); }
+void Gui::nextPartDisplay() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextPartDisplay"); }
+void Gui::nextMeshDisplay() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextMeshDisplay"); }
 
-void Gui::toggleHideGrids() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "toggleHideGrids" ); }
+void Gui::toggleHideGrids() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "toggleHideGrids"); }
 
 void Gui::setCamPos(float x, float y, float z) {
-	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "setCamPos", Q_ARG(float, x), Q_ARG(float, y), Q_ARG(float, z));    
+	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "setCamPos", Q_ARG(float, x), Q_ARG(float, y), Q_ARG(float, z));
 }
 void Gui::setCamRot(float x, float y, float z) {
-	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "setCamRot", Q_ARG(float, x), Q_ARG(float, y), Q_ARG(float, z));    
+	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "setCamRot", Q_ARG(float, x), Q_ARG(float, y), Q_ARG(float, z));
 }
 void Gui::windowSize(int w, int h) {
-	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "windowSize", Q_ARG(int, w), Q_ARG(int, h));    
+	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "windowSize", Q_ARG(int, w), Q_ARG(int, h));
 }
 void Gui::setPlane(int plane) {
 	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "setPlane", Q_ARG(int, plane));
 }
 
 PbClass* Gui::addControl(PbType t) {
-	_args.add("nocheck",true);
+	_args.add("nocheck", true);
 	if (t.str() == "")
 		throw Error("Need to specify object type. Use e.g. gui.create(Slider, ...)");
-	
+
 	PbClass* obj = PbClass::createPyObject(t.str(), "", _args, this);
 	if (!obj || !obj->canConvertTo("CustomControl"))
 		throw Error("gui.create() can only create CustomControl-based objects");
-	
-	QMetaObject::invokeMethod(gGuiThread->getWindow(), "addControl", Q_ARG(void*, (void*)obj));    
-	
+
+	QMetaObject::invokeMethod(gGuiThread->getWindow(), "addControl", Q_ARG(void*, (void*)obj));
+
 	return obj;
 }
+#else
+Gui::Gui() :
+	PbClass(NULL) {
+	if (getenv("MANTA_DISABLE_UI") && atoi(getenv("MANTA_DISABLE_UI"))) { errMsg("Cannot create GUI object, GUI disabled"); }
+}
+
+void Gui::setBackgroundMesh(Mesh* m) {}
+void Gui::show(bool twoD) {}
+void Gui::update() {}
+void Gui::pause() {}
+void Gui::screenshot(string filename) {}
+void Gui::nextRealGrid() {}
+void Gui::nextVec3Grid() {}
+void Gui::nextParts() {}
+void Gui::nextPdata() {}
+void Gui::nextMesh() {}
+void Gui::nextVec3Display() {}
+void Gui::nextPartDisplay() {}
+void Gui::nextMeshDisplay() {}
+void Gui::toggleHideGrids() {}
+void Gui::setCamPos(float x, float y, float z) { }
+void Gui::setCamRot(float x, float y, float z) {}
+void Gui::windowSize(int w, int h) {}
+PbClass* Gui::addControl(PbType t) {
+	_args.add("nocheck", true);
+	if (t.str() == "")
+		throw Error("Need to specify object type. Use e.g. gui.create(Slider, ...)");
+
+	PbClass* obj = PbClass::createPyObject(t.str(), "", _args, this);
+	if (!obj || !obj->canConvertTo("CustomControl"))
+		throw Error("gui.create() can only create CustomControl-based objects");
+
+	return obj;
+}
+#endif
 
 
 } // namespace

@@ -11,13 +11,13 @@
  *
  ******************************************************************************/
 
-#include "vr.h"
 #include "pythonInclude.h"
 #include <stdio.h>
 #include "manta.h"
 #include "general.h"
 #include "wchar.h"
 
+#include "vr.h"
 #include <thread>
 
 namespace Manta {

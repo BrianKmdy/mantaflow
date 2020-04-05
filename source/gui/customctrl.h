@@ -134,9 +134,11 @@ public:
 	PYTHON() void windowSize(int w, int h);
 	PYTHON() void setPlane(int plane);
 	
+#ifndef VR
 protected:
 	GuiThread* mGuiPtr;
 	MainThread* mMainPtr;
+#endif
 };
 	
 } // namespace

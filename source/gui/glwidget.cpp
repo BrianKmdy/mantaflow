@@ -117,6 +117,7 @@ void GLWidget::drawPoints()
 	if (!m_vertexCount[ShapePoints])
 		return;
 
+	std::cout << "Count: " << m_vertexCount[ShapePoints] << std::endl;
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffers[ShapePoints]);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);

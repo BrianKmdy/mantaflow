@@ -2,6 +2,7 @@
 # Flip scene with adaptive time stepping (otherwise similar to flip02)
 # 
 from manta import *
+import time
 
 # solver params
 dim = 3
@@ -95,18 +96,17 @@ testInitGridWithPos(tstGrid)
 pTest.setConst( 0.1 )
 
 lastFrame = -1
-GUI = True
-if 1 and (GUI):
-	gui = Gui()
-	gui.show( dim==2 )
-	#gui.pause()
-	  
-	# show all particles shaded by velocity
-	gui.nextPdata()
-	gui.nextPartDisplay()
-	gui.nextPartDisplay()
+# if 1 and (GUI):
+# 	gui = Gui()
+# 	gui.show( dim==2 )
+# 	#gui.pause()
+# 	  
+# 	# show all particles shaded by velocity
+# 	gui.nextPdata()
+# 	gui.nextPartDisplay()
+# 	gui.nextPartDisplay()
 
-
+start = time.time()
 
 #main loop
 while s.frame < frames:
@@ -159,4 +159,4 @@ while s.frame < frames:
 
 	lastFrame = s.frame;
 
-
+print('Total time: %s' % (time.time() - start))

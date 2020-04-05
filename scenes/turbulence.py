@@ -59,7 +59,6 @@ nu = 0.1
 prodMult = 2.5
 enableDiffuse = True
 
-GUI = False
 if (GUI):
 	gui = Gui()
 	gui.setBackgroundMesh(bgr)
