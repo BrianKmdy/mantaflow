@@ -267,10 +267,18 @@ if (GUI)
 		source/gui/mainwindow.h
 		source/gui/glwidget.h
 		source/gui/painter.h
+		source/gui/glrenderer.h
 		source/gui/meshpainter.h
 		source/gui/qtmain.h
 		source/gui/customctrl.h
 		source/gui/particlepainter.h
+		source/gui/vr.h
+		source/gui/shared/compat.h
+		source/gui/shared/lodepng.h
+		source/gui/shared/Matrices.h
+		source/gui/shared/pathtools.h
+		source/gui/shared/strtools.h
+		source/gui/shared/Vectors.h
 	)
 	set(QT_SOURCES
 		source/gui/customctrl.cpp
@@ -278,9 +286,15 @@ if (GUI)
 		source/gui/glwidget.cpp
 		source/gui/customctrl.cpp
 		source/gui/painter.cpp
+		source/gui/glrenderer.cpp
 		source/gui/meshpainter.cpp
 		source/gui/particlepainter.cpp
 		source/gui/qtmain.cpp
+		source/gui/vr.cpp
+		source/gui/shared/lodepng.cpp
+		source/gui/shared/Matrices.cpp
+		source/gui/shared/pathtools.cpp
+		source/gui/shared/strtools.cpp
 	)
 	list(APPEND PP_SOURCES ${QT_SOURCES})
 	list(APPEND PP_HEADERS ${QT_HEADERS})
@@ -662,6 +676,27 @@ if(GUI)
 endif()
 
 #******************************************************************************
+# VR libs
+	# default: build from own sources
+#	set(ZLIB_SRC adler32.c compress.c crc32.c deflate.c gzclose.c gzlib.c gzread.c gzwrite.c
+#				 inflate.c infback.c inftrees.c inffast.c trees.c uncompr.c zutil.c)
+#	foreach(it ${ZLIB_SRC})
+#		list(APPEND SILENT_SOURCES dependencies/zlib-1.2.8/${it}) 
+#	endforeach(it)
+
+list(APPEND INCLUDE_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/vr/glew/glew-1.11.0/include)
+list(APPEND F_LIB_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/vr/glew/glew-1.11.0/lib/Release/x64)
+list(APPEND F_LIBS glew32.lib glew32s.lib)
+
+list(APPEND INCLUDE_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/vr/openvr/headers)
+list(APPEND F_LIB_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/vr/openvr/lib/win64)
+list(APPEND F_LIBS openvr_api.lib)
+
+list(APPEND INCLUDE_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/vr/sdl2-2.0.3/include)
+list(APPEND F_LIB_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/vr/sdl2-2.0.3/bin/win64)
+list(APPEND F_LIBS SDL2.lib SDL2_static.lib SDL2main.lib)
+
+#******************************************************************************
 # setup executable
 
 set(EXECCMD manta)
@@ -769,6 +804,13 @@ if(WIN32)
 	# enable when using Qt creator:
 	#add_definitions(/FS)
 endif()
+
+# Copy the dependancy binaries into the build directory
+add_custom_command(TARGET manta POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/dependencies/win_x64"
+        $<TARGET_FILE_DIR:manta>)
+
 
 # print debug summary
 # MESSAGE(STATUS "DEBUG Flag-Summary - Includes: '${INCLUDE_PATHS}' | Libs: '${F_LIBS}' | LibPaths: '${F_LIB_PATHS}' ")

@@ -42,10 +42,10 @@ else:
 flags.updateFromLevelset(phi)
 
 		
-if (GUI):
-	gui = Gui()
-	gui.show()
-	gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
+#	gui.pause()
 	
 
 #main loop

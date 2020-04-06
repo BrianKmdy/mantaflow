@@ -53,11 +53,10 @@ cgIter = 5
 
 timings = Timings()
 
-GUI = False
-if (GUI):
-	gui = Gui()
-	gui.show()
-	#gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
+#	#gui.pause()
 
 #main loop
 for t in range(25000):
@@ -89,7 +88,7 @@ for t in range(25000):
 	s.step()
 
 	inter = 10
-	if 0 and (t % inter == 0):
-		gui.screenshot( 'karman_%04d.png' % int(t/inter) );
+	#if 0 and (t % inter == 0):
+	#	gui.screenshot( 'karman_%04d.png' % int(t/inter) );
 			
 

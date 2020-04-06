@@ -82,10 +82,10 @@ updateFractions( flags=flags, phiObs=phiObs, fractions=fractions, boundaryWidth=
 setObstacleFlags(flags=flags, phiObs=phiObs, fractions=fractions)
 
 lastFrame = -1
-if 1 and (GUI):
-	gui = Gui()
-	gui.show()
-	#gui.pause()
+#if 1 and (GUI):
+#	gui = Gui()
+#	gui.show()
+#	#gui.pause()
 
 # save reference any grid, to automatically determine grid size
 if saveParts:
@@ -150,8 +150,8 @@ while s.frame < frames:
 		# generate data for flip03_gen.py surface generation scene
 		if saveParts:
 			pp.save( 'flipParts_%04d.uni' % s.frame ); 
-		if 0 and (GUI):
-			gui.screenshot( 'flip06_%04d.png' % s.frame );
+		#if 0 and (GUI):
+		#	gui.screenshot( 'flip06_%04d.png' % s.frame );
 
 	#s.printMemInfo()
 	lastFrame = s.frame;

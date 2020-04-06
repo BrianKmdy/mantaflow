@@ -91,11 +91,10 @@ sampleShapeWithParticles(shape=fld, flags=gFlags, parts=pp, discretization=param
 end = pp.pySize()
 pT.setConstRange(s=FlagFluid, begin=begin, end=end, notiming=True)
 
-guion = False
-if guion:
-        gui = Gui()
-        gui.show()
-        if pause: gui.pause()
+#if guion:
+#        gui = Gui()
+#        gui.show()
+#        if pause: gui.pause()
 
 while (s.timeTotal<params['t_end']): # main loop
         mapPartsToMAC(vel=gV, flags=gFlags, velOld=gVold, parts=pp, partVel=pV, ptype=pT, exclude=FlagEmpty)

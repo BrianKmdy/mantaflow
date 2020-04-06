@@ -40,9 +40,9 @@ flags.initDomain(boundaryWidth=bWidth)
 flags.fillGrid()
 setOpenBound(flags, bWidth, 'yY', FlagOutflow|FlagEmpty) 
 
-if (GUI):
-	gui = Gui()
-	gui.show()
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
 
 source = s.create(Cylinder, center=gs*vec3(0.5,0.05,0.5), radius=res*0.1, z=gs*vec3(0, 0.02, 0))
 	

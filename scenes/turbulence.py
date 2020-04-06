@@ -59,25 +59,25 @@ nu = 0.1
 prodMult = 2.5
 enableDiffuse = True
 
-if (GUI):
-	gui = Gui()
-	gui.setBackgroundMesh(bgr)
-	gui.show()
-	# unused: sliderL0 = gui.addControl(Slider, text='turbulent lengthscale', val=L0, min=0.001, max=0.5)
-	sliderMult = gui.addControl(Slider, text='turbulent mult', val=mult, min=0, max=1)
-	sliderProd = gui.addControl(Slider, text='production mult', val=prodMult, min=0.1, max=5)
-	checkDiff = gui.addControl(Checkbox, text='enable RANS', val=enableDiffuse)
+#if (GUI):
+#	gui = Gui()
+#	gui.setBackgroundMesh(bgr)
+#	gui.show()
+#	# unused: sliderL0 = gui.addControl(Slider, text='turbulent lengthscale', val=L0, min=0.001, max=0.5)
+#	sliderMult = gui.addControl(Slider, text='turbulent mult', val=mult, min=0, max=1)
+#	sliderProd = gui.addControl(Slider, text='production mult', val=prodMult, min=0.1, max=5)
+#	checkDiff = gui.addControl(Checkbox, text='enable RANS', val=enableDiffuse)
 
 KEpsilonBcs(flags=flags,k=k,eps=eps,intensity=intensity,nu=nu,fillArea=True)
 
 #main loop
 for t in range(10000):
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
-	if (GUI):
-		mult = sliderMult.get()
-		# unused: K0 = sliderL0.get()
-		enableDiffuse = checkDiff.get()
-		prodMult = sliderProd.get()
+	#if (GUI):
+	#	mult = sliderMult.get()
+	#	# unused: K0 = sliderL0.get()
+	#	enableDiffuse = checkDiff.get()
+	#	prodMult = sliderProd.get()
 	
 	turb.seed(box,500)
 	turb.advectInGrid(flags=flags, vel=vel, integrationMode=IntRK4)

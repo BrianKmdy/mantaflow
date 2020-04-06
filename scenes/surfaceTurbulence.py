@@ -77,14 +77,14 @@ if fluidVel!=0:
 	mapGridToPartsVec3(source=vel, parts=pp, target=pVel )
 
 
-if 1 and (GUI):
-	gui = Gui()
-	gui.show()
-
-	gui.nextPdata()
-	gui.nextPartDisplay()
-	gui.nextPartDisplay()
-	#gui.pause()
+#if 1 and (GUI):
+#	gui = Gui()
+#	gui.show()
+#
+#	gui.nextPdata()
+#	gui.nextPartDisplay()
+#	gui.nextPartDisplay()
+#	#gui.pause()
    
    
 #main loop

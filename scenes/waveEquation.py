@@ -27,10 +27,10 @@ vel   = s.create(RealGrid)
 flags.initDomain()
 flags.fillGrid()
 
-if (GUI):
-	gui = Gui()
-	gui.show( True )
-	#gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	gui.show( True )
+#	#gui.pause()
 
 source = Box( parent=s, p0=gs*vec3(0.3,0.3,0.3), p1=gs*vec3(0.5,0.5,0.5))
 source.applyToGrid(grid=h,     value=1)

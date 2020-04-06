@@ -37,11 +37,10 @@ flags.updateFromLevelset(phiInit)
 # note, there's no resamplig here, so we need _LOTS_ of particles...
 sampleFlagsWithParticles( flags=flags, parts=pp, discretization=particleNumber, randomness=0.2 )
 
-GUI = False
-if (GUI):
-	gui = Gui()
-	gui.show()
-	#gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
+#	#gui.pause()
 	
 #main loop
 for t in range(2500):

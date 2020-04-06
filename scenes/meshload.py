@@ -34,9 +34,9 @@ flags.fillGrid()
 
 # run simple smoke sim 
 
-if 1 and (GUI):
-	gui = Gui()
-	gui.show()
+#if 1 and (GUI):
+#	gui = Gui()
+#	gui.show()
 
 source = s.create(Cylinder, center=gs*vec3(0.35,0.2,0.5), radius=res*0.15, z=gs*vec3(0, 0.05, 0))
 

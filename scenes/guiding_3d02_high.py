@@ -61,13 +61,13 @@ flags.initDomain(boundaryWidth=bWidth)
 flags.fillGrid()
 setOpenBound(flags,bWidth,'yY',FlagOutflow|FlagEmpty) 
 
-if (GUI):
-	gui = Gui()
-	gui.show()
-	gui.nextVec3Display() # hide velocity display
-	gui.nextVec3Display()
-	gui.nextVec3Display()
-	#gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
+#	gui.nextVec3Display() # hide velocity display
+#	gui.nextVec3Display()
+#	gui.nextVec3Display()
+#	#gui.pause()
 
 source = s2.create(Cylinder, center=gs2*vec3(0.5,0.05,0.5), radius=res2*0.1, z=gs2*vec3(0, 0.02, 0))
 W.multConst(0)

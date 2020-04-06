@@ -112,11 +112,11 @@ if(upres>0):
 	xl_wltnoise.timeAnim = 0.1
 
 # setup user interface
-if (GUI):
-	gui = Gui()
-	sliderStr = gui.addControl(Slider, text='turb. strength', val=wltStrength, min=0, max=2)
-	gui.show()
-	#gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	sliderStr = gui.addControl(Slider, text='turb. strength', val=wltStrength, min=0, max=2)
+#	gui.show()
+#	#gui.pause()
 
 #printBuildInfo() 
 
@@ -124,8 +124,8 @@ if (GUI):
 for t in range(200):
 	mantaMsg('\nFrame %i, simulation time %f' % (sm.frame, sm.timeTotal))
 
-	if (GUI):
-		wltStrength = sliderStr.get()
+	#if (GUI):
+	#	wltStrength = sliderStr.get()
 	
 	advectSemiLagrange(flags=flags, vel=vel, grid=density,  order=2)	
 	advectSemiLagrange(flags=flags, vel=vel, grid=vel,      order=2)

@@ -41,13 +41,13 @@ bWidth=1
 flags.initDomain(boundaryWidth=bWidth) 
 flags.fillGrid()
 
-if (GUI):
-	gui = Gui()
-	gui.show()
-	gui.nextVec3Display()
-	gui.nextVec3Display()
-	gui.nextVec3Display()
-	#gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
+#	gui.nextVec3Display()
+#	gui.nextVec3Display()
+#	gui.nextVec3Display()
+#	#gui.pause()
 
 source = s.create(Cylinder, center=gs*vec3(0.5,0.2,0.5), radius=gs.y*0.14, z=gs*vec3(0, 0.02*1.5, 0))
 getSpiralVelocity(flags=flags, vel=velT, strength=0.5*scale)

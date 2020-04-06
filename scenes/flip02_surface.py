@@ -81,12 +81,10 @@ pTest.setConst( 0.1 )
 if saveParts:
 	pressure.save( 'ref_flipParts_0000.uni' );
 
-GUI = False
-if 1 and (GUI):
-	gui = Gui()
-	gui.show()
-	#gui.pause()
-   
+#if 1 and (GUI):
+#	gui = Gui()
+#	gui.show()
+#	#gui.pause()  
 
 #main loop
 for t in range(250):
@@ -133,7 +131,7 @@ for t in range(250):
 	if saveParts:
 		pp.save( 'flipParts_%04d.uni' % t );
 
-	if 0 and (GUI):
-		gui.screenshot( 'flip02_%04d.png' % t );
+	#if 0 and (GUI):
+	#	gui.screenshot( 'flip02_%04d.png' % t );
 
 

@@ -94,9 +94,9 @@ flags.fillGrid()
 setOpenBound(flags,bWidth,'Y',FlagOutflow|FlagEmpty) 
 
 
-if (GUI):
-	gui = Gui()
-	gui.show()
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
 
 # main loop
 for t in range(200):

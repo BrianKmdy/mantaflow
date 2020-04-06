@@ -59,10 +59,10 @@ gpi    = s.create(IntGrid)
 # scene setup
 flags.initDomain(boundaryWidth=0)
 	
-if 1 and (GUI):
-	gui = Gui()
-	gui.show()
-	#gui.pause()
+#if 1 and (GUI):
+#	gui = Gui()
+#	gui.show()
+#	#gui.pause()
 
 
 # main loop
@@ -106,9 +106,9 @@ while frame < endFrame:
 			mesh.save( meshfileCurr )
 		else:
 			# stop playback for UI, reset
-			if (GUI):
-				gui.pause()
-				outCnt = 0
+			#if (GUI):
+			#	gui.pause()
+			#	outCnt = 0
 
 	#gui.screenshot( 'flip03_%04d.png' % outCnt ); 
 	outCnt += 1

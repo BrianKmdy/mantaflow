@@ -23,9 +23,9 @@ source = s.create(Cylinder, center=gs*vec3(0.5,0.1,0.5), radius=res*0.14, z=gs*v
 
 npArray = np.ones( [res,res], dtype=np.float32 )
 
-if (GUI):
-	gui = Gui()
-	gui.show( True ) 
+#if (GUI):
+#	gui = Gui()
+#	gui.show( True )
 	
 #main loop
 for t in range(400):

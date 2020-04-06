@@ -42,9 +42,9 @@ flags.initDomain()
 flags.fillGrid()
 timings = Timings()
 
-if (GUI):
-	gui = Gui()
-	gui.show( dim==2 )
+#if (GUI):
+#	gui = Gui()
+#	gui.show( dim==2 )
 
 source = s.create(Cylinder, center=gs*vec3(0.5,0.1,0.5), radius=res*0.14, z=gs*vec3(0, 0.02, 0))
 
@@ -70,8 +70,8 @@ while s.frame < frames:
 	solvePressure( flags=flags, vel=vel, pressure=pressure )
 	setWallBcs(flags=flags, vel=vel)
 
-	if 0 and (GUI) and (lastFrame!=s.frame) and (s.frame%1==0):
-		gui.screenshot( 'plumead_%04d.jpg' % s.frame );
+	#if 0 and (GUI) and (lastFrame!=s.frame) and (s.frame%1==0):
+	#	gui.screenshot( 'plumead_%04d.jpg' % s.frame );
 
 	#timings.display()
 	lastFrame = s.frame 

@@ -43,11 +43,10 @@ flags.updateFromLevelset(phi)
 if doOpen:
 	setOpenBound(flags,bWidth,'xXzZ',FlagOutflow|FlagEmpty) 
 		
-if (GUI):
-	gui = Gui()
-	gui.show()
-	gui.pause()
-	
+#if (GUI):
+#	gui = Gui()
+#	gui.show()
+#	gui.pause()
 
 #main loop
 for t in range(1000):

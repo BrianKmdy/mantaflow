@@ -60,11 +60,10 @@ flags.fillGrid()
 if doOpen:
 	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
 
-GUI = False
-if (GUI):
-	gui = Gui()
-	gui.show(True)
-	#gui.pause()
+#if (GUI):
+#	gui = Gui()
+#	gui.show(True)
+#	#gui.pause()
 
 # source: cube in center of domain (x, y), standing on bottom of the domain
 boxSize = vec3(res/8, 0.05*res, res/8)

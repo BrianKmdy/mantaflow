@@ -75,10 +75,10 @@ flags.updateFromLevelset(phi)
 sampleLevelsetWithParticles( phi=phi, flags=flags, parts=pp, discretization=2, randomness=0.1 )
 mapGridToPartsVec3(source=vel, parts=pp, target=pVel )
 
-if 1 and (GUI):
-	gui = Gui()
-	gui.show( dim==3 )
-	#gui.pause()
+#if 1 and (GUI):
+#	gui = Gui()
+#	gui.show( dim==3 )
+#	#gui.pause()
 		
 # Main loop
 step = -1

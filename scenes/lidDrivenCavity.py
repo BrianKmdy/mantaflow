@@ -58,11 +58,10 @@ pressure = s.create(RealGrid)
 
 timings = Timings()
 
-GUI = False
-if 1 and (GUI):
-	gui = Gui()
-	gui.show( True ) 
-	gui.pause()
+#if 1 and (GUI):
+#	gui = Gui()
+#	gui.show( True ) 
+#	gui.pause()
 
 
 # geometry
@@ -110,8 +109,8 @@ for t in range(98765):
 	setWallBcs(flags=flags, vel=vel)    
 	solvePressure(flags=flags, vel=vel, pressure=pressure)
 
-	if 0 and (GUI) and (lastFrame!=s.frame) and (s.frame%1==0):
-		gui.screenshot( 'ldc_re%05d_%04d.jpg' % (int(Re), s.frame) );
+	#if 0 and (GUI) and (lastFrame!=s.frame) and (s.frame%1==0):
+	#	gui.screenshot( 'ldc_re%05d_%04d.jpg' % (int(Re), s.frame) );
 	
 	lastFrame = s.frame
 	s.step()
