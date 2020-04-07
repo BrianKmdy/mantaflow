@@ -13,9 +13,9 @@
 
 #include "painter.h"
 #include "simpleimage.h"
-#include "glwidget.h"
 #include <sstream>
 #include <iomanip>
+#include <SDL_opengl.h>
 
 using namespace std;
 
@@ -389,8 +389,6 @@ void glBox(const Vec3& p0, const Vec3& p1, const float dx) {
 template<> void GridPainter<int>::paint() {
 	if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
-
-	std::cout << "painting gridlines" << std::endl;
 
 	float dx = mLocalGrid->getDx();
 	Vec3 box[4];

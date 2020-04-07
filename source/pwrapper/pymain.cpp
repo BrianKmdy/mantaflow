@@ -22,7 +22,6 @@
 
 namespace Manta {
 	extern void guiMain(int argc, char* argv[]);
-	extern void guiWaitFinish();
 
 #ifdef VR
 	CMainApplication* gMainApplication;
@@ -88,9 +87,6 @@ void runScript(vector<string>& args) {
 #endif
 	
 	debMsg("Script finished.", 0);
-#ifdef GUI
-	guiWaitFinish();
-#endif
 
 	// finalize
 	Pb::finalize();

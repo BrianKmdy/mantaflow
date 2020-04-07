@@ -12,9 +12,9 @@
  ******************************************************************************/
 
 #include "meshpainter.h"
-#include <QtOpenGL>
 #include "mesh.h"
 #include "vortexsheet.h"
+#include <SDL_opengl.h>
 
 using namespace std;
 

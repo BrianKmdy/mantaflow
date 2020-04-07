@@ -15,7 +15,7 @@
 #include "particlepainter.h"
 #include <sstream>
 #include <iomanip>
-#include <QtOpenGL>
+#include <SDL_opengl.h>
 #include "vortexpart.h"
 #include "turbulencepart.h"
 

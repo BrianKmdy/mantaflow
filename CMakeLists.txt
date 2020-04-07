@@ -49,7 +49,6 @@ endif()
 
 # compilation versions
 OPTION(DEBUG "Enable debug compilation" OFF)
-OPTION(GUI "Compile with GUI (requires QT)" ON)
 OPTION(DOUBLEPRECISION "Compile with double floating point precision" OFF)
 # multithreading
 OPTION(TBB "Use multi-thread kernels using Intels TBB" OFF)
@@ -125,7 +124,6 @@ endif()
 MESSAGE(STATUS "")
 MESSAGE(STATUS "Options - "
 	" -DDEBUG='${DEBUG}' "
-	" -DGUI='${GUI}' "
 	" -DTBB='${TBB}' "
 	" -DOPENMP='${OPENMP}' "
 	" -DPREPDEBUG='${PREPDEBUG}' "
@@ -261,15 +259,13 @@ set(NOPP_HEADERS
 	source/util/solvana.h
 )
 
+# GUI is always on for VR
+set(GUI ON)
 if (GUI)
-	# need QT preprocessor
-	set(QT_HEADERS
-		source/gui/mainwindow.h
-		source/gui/glwidget.h
+	set(VR_HEADERS
 		source/gui/painter.h
 		source/gui/glrenderer.h
 		source/gui/meshpainter.h
-		source/gui/qtmain.h
 		source/gui/customctrl.h
 		source/gui/particlepainter.h
 		source/gui/vr.h
@@ -280,24 +276,21 @@ if (GUI)
 		source/gui/shared/strtools.h
 		source/gui/shared/Vectors.h
 	)
-	set(QT_SOURCES
+	set(VR_SOURCES
 		source/gui/customctrl.cpp
-		source/gui/mainwindow.cpp
-		source/gui/glwidget.cpp
 		source/gui/customctrl.cpp
 		source/gui/painter.cpp
 		source/gui/glrenderer.cpp
 		source/gui/meshpainter.cpp
 		source/gui/particlepainter.cpp
-		source/gui/qtmain.cpp
 		source/gui/vr.cpp
 		source/gui/shared/lodepng.cpp
 		source/gui/shared/Matrices.cpp
 		source/gui/shared/pathtools.cpp
 		source/gui/shared/strtools.cpp
 	)
-	list(APPEND PP_SOURCES ${QT_SOURCES})
-	list(APPEND PP_HEADERS ${QT_HEADERS})
+	list(APPEND PP_SOURCES ${VR_SOURCES})
+	list(APPEND PP_HEADERS ${VR_HEADERS})
 endif()
 
 # include dirs
@@ -563,7 +556,7 @@ if(NOT WIN32)
 	MESSAGE(STATUS "Git info target header ${GITINFO}")
 	add_custom_command(OUTPUT ${GITINFO}
 					   COMMAND python${PYTHON_VER_ID} "${CMAKE_CURRENT_SOURCE_DIR}/tools/getGitVersion.py" "${GITINFO}"
-					   DEPENDS ${PP_SOURCES} ${PP_HEADERS} ${NOPP_SOURCES} ${NOPP_HEADERS} ${QT_SOURCES} ${QT_HEADERS}
+					   DEPENDS ${PP_SOURCES} ${PP_HEADERS} ${NOPP_SOURCES} ${NOPP_HEADERS} ${VR_SOURCES} ${VR_HEADERS}
 					   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
 endif()
 
@@ -631,41 +624,15 @@ endif()
 
 if(GUI)
 	# remap
-	set(QT_REMAP)
-	foreach(it ${QT_HEADERS})
-		list(APPEND QT_REMAP "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/${it}")
+	set(VR_REMAP)
+	foreach(it ${VR_HEADERS})
+		list(APPEND VR_REMAP "${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/${it}")
 	endforeach(it)
 	add_definitions(-DGUI=1)
 	list(APPEND INCLUDE_PATHS ${CMAKE_CURRENT_BINARY_DIR}
 				${CMAKE_CURRENT_BINARY_DIR}/${PP_PATH}/source/gui source/gui)
 
 	cmake_policy(SET CMP0020 NEW)
-	find_package(Qt5Core QUIET)
-	if (Qt5Core_FOUND)
-		message("Using Qt5")
-		find_package(Qt5Widgets REQUIRED)
-		find_package(Qt5OpenGL REQUIRED)
-
-		qt5_wrap_cpp(MOC_OUTFILES ${QT_REMAP} )
-		qt5_add_resources(QT_RES resources/res.qrc )
-		add_definitions(-DGUI=1)
-		add_definitions(${Qt5Widgets_DEFINITIONS})
-		list(APPEND INCLUDE_PATHS ${Qt5Widgets_INCLUDE_DIRS} ${Qt5OpenGL_INCLUDE_DIRS})
-		list(APPEND F_LIBS ${Qt5Widgets_LIBRARIES} ${Qt5OpenGL_LIBRARIES})
-		list(APPEND SOURCES ${MOC_OUTFILES} ${QT_RES})
-	else()
-		message("No Qt5 found (recommended!), trying to use Qt4")
-		find_package(Qt4 REQUIRED)
-		set(QT_USE_QTOPENGL TRUE)
-
-		qt4_wrap_cpp(MOC_OUTFILES ${QT_REMAP} )
-		qt4_add_resources(QT_RES resources/res.qrc )
-		include(${QT_USE_FILE})
-		add_definitions(${QT_DEFINITIONS})
-		list(APPEND F_LIBS ${QT_LIBRARIES})
-		list(APPEND SOURCES ${MOC_OUTFILES} ${QT_RES})
-	endif()
-
 	if (APPLE)
 		# mac opengl framework
 		set(F_LINKADD "${F_LINKADD} -framework OpenGL ")

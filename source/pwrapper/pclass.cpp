@@ -17,16 +17,6 @@
 #include "general.h"
 #include "timing.h"
 
-#ifdef GUI
-#   include <QMutex>
-#else
-class QMutex { public:
-	void lock() {};
-	void unlock() {};
-	bool tryLock() { return true; };
-};
-#endif
-
 using namespace std;
 namespace Manta {
 
@@ -86,12 +76,12 @@ vector<PbClass*> PbClass::mInstances;
 PbClass::PbClass(FluidSolver* parent, const string& name, PyObject* obj)
 	: mMutex(NULL), mParent(parent), mPyObject(obj), mName(name), mHidden(false)
 {
-	mMutex = new QMutex();
+	mMutex = new std::mutex();
 }
 
 PbClass::PbClass(const PbClass& a) : mMutex(NULL), mParent(a.mParent), mPyObject(0), mName("_unnamed"), mHidden(false)
 {
-	mMutex = new QMutex();
+	mMutex = new std::mutex();
 }
 	
 
@@ -112,7 +102,7 @@ void PbClass::unlock() {
 	mMutex->unlock();
 }
 bool PbClass::tryLock() {
-	return mMutex->tryLock();
+	return mMutex->try_lock();
 }
 	
 PbClass* PbClass::getInstance(int idx) {

@@ -23,8 +23,7 @@
 #include <string>
 #include <vector>
 #include <map>
-
-class QMutex;
+#include <mutex>
 
 namespace Manta {
 struct PbClassData;
@@ -76,7 +75,7 @@ public:
 	inline bool canConvertTo(const std::string& classname) { return Pb::canConvert(mPyObject, classname); }
 	
 protected:
-	QMutex*      mMutex;
+	std::mutex*  mMutex;
 	FluidSolver* mParent;
 	PyObject*    mPyObject;
 	std::string  mName;

@@ -349,8 +349,6 @@ void CMainApplication::drawPoints()
 {
 	if (!m_vertexCount[ShapePoints])
 		return;
-
-	// std::cout << "Count: " << m_vertexCount[ShapePoints] << std::endl;
 	
 	Matrix4 matView = GetCurrentViewProjectionMatrix(m_currentEye);
 

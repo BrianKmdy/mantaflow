@@ -14,98 +14,13 @@
 #ifndef _CUSTOMCTRL_H__
 #define _CUSTOMCTRL_H__
 
-#include <QSlider>
-#include <QLabel>
-#include <QCheckBox>
-#include <QBoxLayout>
-#include <QTextStream>
 #include "manta.h"
 
 namespace Manta {
 
 // fwd decl.
 class Mesh;
-class GuiThread;
-class MainThread;
-	
-//! Interface for python declared controls
-PYTHON() class CustomControl : public PbClass {
-public:
-	PYTHON() CustomControl();
-	
-	virtual void init(QBoxLayout* layout) {};
 
-protected:
-};
-
-//! Checkbox with attached text display
-class TextCheckbox : public QCheckBox {
-	Q_OBJECT
-public:
-	TextCheckbox(const std::string& name, bool val);
-	void attach(QBoxLayout* layout);
-	void set(bool v);
-	bool get();
-	
-public slots:
-	void update(int v);
-		
-protected:
-	bool mVal;
-	QLabel* mLabel;    
-	QString mSName;    
-};
-
-//! Slider with attached text display
-class TextSlider : public QSlider {
-	Q_OBJECT
-public:
-	TextSlider(const std::string& name, float val, float min, float max);
-	void attach(QBoxLayout* layout);
-	void set(float v);
-	float get();
-	
-public slots:
-	void update(int v);
-		
-protected:
-	float mMin, mMax, mScale;
-	QLabel* mLabel;    
-	QString mSName;    
-};
-	
-//! Links a slider control
-PYTHON(name=Slider)
-class CustomSlider : public CustomControl  {
-public:
-	PYTHON() CustomSlider(std::string text, float val, float min, float max);
-	virtual void init(QBoxLayout* layout);
-	
-	PYTHON() float get();
-	PYTHON() void set(float v);
-	
-protected:
-	float mMin, mMax, mVal;
-	std::string mSName;
-	TextSlider* mSlider;
-};
-
-//! Links a checkbox control
-PYTHON(name=Checkbox)
-class CustomCheckbox : public CustomControl  {
-public:
-	PYTHON() CustomCheckbox(std::string text, bool val);
-	virtual void init(QBoxLayout* layout);
-	
-	PYTHON() bool get();
-	PYTHON() void set(bool v);
-	
-protected:
-	bool mVal;
-	std::string mSName;
-	TextCheckbox* mCheckbox;
-};
-	
 
 //! GUI adapter class to call from Python
 PYTHON() class Gui : public PbClass {
@@ -132,13 +47,7 @@ public:
 	PYTHON() void setCamPos(float x, float y, float z);
 	PYTHON() void setCamRot(float x, float y, float z);  
 	PYTHON() void windowSize(int w, int h);
-	PYTHON() void setPlane(int plane);
 	
-#ifndef VR
-protected:
-	GuiThread* mGuiPtr;
-	MainThread* mMainPtr;
-#endif
 };
 	
 } // namespace
