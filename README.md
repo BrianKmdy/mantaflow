@@ -1,4 +1,11 @@
-# Mantaflow #
+# Mantaflow VR #
+
+VR version of Mantaflow, using OpenVR
+
+Included dependencies:
+* OpenVR ([license](https://github.com/ValveSoftware/openvr/blob/master/LICENSE))
+* SDL 2 ([license](https://www.libsdl.org/license.php))
+* GLEW ([license](http://glew.sourceforge.net/glew.txt))
 
 Mantaflow is an open-source framework targeted at fluid simulation research in
 Computer Graphics.  Its parallelized C++ solver core, python scene definition
@@ -14,5 +21,3 @@ In addition, it provides a toolbox of for deep learning experiments with
 fluids. For a tighter integration with deep learning, please check out our
 differentiable solving framework _phiflow_:
 [https://github.com/tum-pbs/PhiFlow](https://github.com/tum-pbs/PhiFlow)
-
-
