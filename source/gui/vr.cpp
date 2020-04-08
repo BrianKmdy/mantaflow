@@ -1,7 +1,5 @@
 #include "vr.h"
 
-#ifdef VR
-
 #include <thread>
 #include <chrono>
 #include <fstream>
@@ -1828,5 +1826,3 @@ void updateQtGui(bool full, int frame, float time, const std::string& curPlugin)
 }
 
 }
-
-#endif

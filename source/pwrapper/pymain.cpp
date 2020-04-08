@@ -23,9 +23,7 @@
 namespace Manta {
 	extern void guiMain(int argc, char* argv[]);
 
-#ifdef VR
 	CMainApplication* gMainApplication;
-#endif
 }
 
 using namespace std;
@@ -107,36 +105,22 @@ int main(int argc,char* argv[]) {
 		doGui = false;
 	}
 
-	bool doVr = false;
-#ifdef VR
-	doVr = true;
-#endif
-	if (doVr) {
-#ifdef VR
-		vector<string> args;
-		for (int i = 1; i < argc; i++) args.push_back(argv[i]);
-		std::thread script_thread(runScript, args);
+	vector<string> args;
+	for (int i = 1; i < argc; i++) args.push_back(argv[i]);
+	std::thread script_thread(runScript, args);
 
-		gMainApplication = new CMainApplication(argc, argv);
+	gMainApplication = new CMainApplication(argc, argv);
 
-		if (!gMainApplication->BInit())
-		{
-			gMainApplication->Shutdown();
-			return 1;
-		}
-
-		gMainApplication->RunMainLoop();
-
-		// XXX/bmoody Re-enable this to shutdown properly
-		// script_thread.join();
-#endif
+	if (!gMainApplication->BInit())
+	{
+		gMainApplication->Shutdown();
+		return 1;
 	}
-	else {
-		if (doGui) {
-			guiMain(argc, argv);
-			doScript = false;
-		}
-	}
+
+	gMainApplication->RunMainLoop();
+
+	// XXX/bmoody Re-enable this to shutdown properly
+	// script_thread.join();
 	
 #endif        		
 
