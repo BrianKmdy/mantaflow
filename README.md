@@ -2,6 +2,8 @@
 
 VR version of Mantaflow, using OpenVR
 
+Note: Currently only Win64 is supported
+
 #### Controls ####
 * Arrow_Up: Increase scale
 * Arrow_Down: Decrease scale
